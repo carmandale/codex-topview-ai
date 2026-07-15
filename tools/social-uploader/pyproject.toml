@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "social-uploader"
 version = "0.1.0"
-description = "社交媒体视频自动上传 CLI 工具（TikTok / Instagram / YouTube）"
+description = "Social media video automatic upload CLI tool (TikTok / Instagram / YouTube)"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

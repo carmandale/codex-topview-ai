@@ -1,5 +1,5 @@
 def should_skip(step, resume_from, steps):
-    """如果 resume_from 指定了某个步骤，跳过该步骤之前的所有阶段。"""
+    """If resume_from specifies a step, all stages before that step are skipped."""
     if not resume_from:
         return False
     if resume_from not in steps:

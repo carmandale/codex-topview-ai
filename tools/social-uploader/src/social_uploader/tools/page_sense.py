@@ -1,7 +1,7 @@
-"""页面感知层 — 为 AI 提供结构化 DOM 快照和截图能力。
+"""Page Awareness Layer—Provides AI with structured DOM snapshot and screenshot capabilities.
 
-等效于 MCP 的 get_dom_tree / take_screenshot，但直接通过
-DrissionPage 的 CDP 能力实现，无需单独部署 MCP Server。
+Equivalent to MCP's get_dom_tree / take_screenshot, but directly via
+DrissionPage's CDP capability is implemented without the need to deploy MCP Server separately.
 """
 
 import base64
@@ -15,9 +15,9 @@ _SNAPSHOT_DIR = Path.home() / ".social_uploader" / "snapshots"
 
 
 def get_simplified_dom(page, root_selector: str | None = None, max_depth: int = 6, max_nodes: int = 200) -> str:
-    """获取简化版 DOM 树，类似 MCP 的 browser_snapshot (Accessibility Tree)。
+    """Get a simplified version of the DOM tree, similar to MCP's browser_snapshot (Accessibility Tree).
 
-    只保留对 AI 决策有用的信息：标签、角色、文本、可见性、可交互性。
+    Only keep information useful for AI decision-making: tags, roles, text, visibility, interactivity.
     """
     js = """
     (function(rootSel, maxDepth, maxNodes) {
@@ -76,12 +76,12 @@ def get_simplified_dom(page, root_selector: str | None = None, max_depth: int = 
         if raw:
             return raw
     except Exception as e:
-        logger.debug(f"DOM 快照获取失败: {e}")
+        logger.debug(f"DOM snapshot acquisition failed: {e}")
     return "{}"
 
 
 def get_interactive_elements(page) -> str:
-    """获取页面所有可交互元素的摘要（按钮、输入框、链接）。"""
+    """Get a summary of all interactive elements on the page (buttons, input boxes, links)."""
     js = """
     (function() {
         const items = [];
@@ -115,12 +115,12 @@ def get_interactive_elements(page) -> str:
         if raw:
             return raw
     except Exception as e:
-        logger.debug(f"交互元素获取失败: {e}")
+        logger.debug(f"Failed to obtain interactive elements: {e}")
     return "[]"
 
 
 def take_screenshot_base64(page, full_page: bool = False) -> str | None:
-    """获取页面截图的 base64 编码（可供多模态 LLM 使用）。"""
+    """Get the base64 encoding of the page screenshot (available for multimodal LLM)."""
     path = None
     try:
         _SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
@@ -134,7 +134,7 @@ def take_screenshot_base64(page, full_page: bool = False) -> str | None:
             path.unlink(missing_ok=True)
             return data
     except Exception as e:
-        logger.debug(f"截图获取失败: {e}")
+        logger.debug(f"Failed to obtain screenshot: {e}")
     finally:
         if path is not None:
             try:
@@ -145,7 +145,7 @@ def take_screenshot_base64(page, full_page: bool = False) -> str | None:
 
 
 def diagnose_page_state(page) -> dict:
-    """综合诊断当前页面状态，返回结构化信息供 AI 决策。"""
+    """Comprehensive diagnosis of the current page status and return of structured information for AI decision-making."""
     try:
         page_url = page.url
     except Exception:
@@ -187,8 +187,14 @@ def diagnose_page_state(page) -> dict:
         except Exception:
             pass
 
-    error_keywords = ["error", "failed", "failure", "错误", "失败", "rejected", "违反", "restricted"]
-    success_keywords = ["success", "published", "scheduled", "已发布", "已安排", "发布成功", "shared", "已分享"]
+    error_keywords = [
+        "error", "failed", "failure", "rejected", "violation", "restricted",
+        "错误", "失败", "违反",
+    ]
+    success_keywords = [
+        "success", "published", "scheduled", "shared",
+        "已发布", "已安排", "发布成功", "已分享",
+    ]
 
     try:
         body_text = (page.ele("tag:body", timeout=0.5).text or "")[:5000].lower()

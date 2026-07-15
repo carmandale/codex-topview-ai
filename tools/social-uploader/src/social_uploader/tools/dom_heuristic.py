@@ -1,6 +1,6 @@
-"""Tier 2 启发式 DOM 发现器 — 当 recipe 中的选择器过期时，自动在页面中搜索替代元素。
+"""Tier 2 heuristic DOM finder — Automatically searches the page for replacement elements when a selector in a recipe expires.
 
-不调用 AI API，通过语义关键词 + 元素特征（标签、值格式、位置关系）在 DOM 中定位目标。
+Without calling the AI ​​API, locate the target in the DOM through semantic keywords + element characteristics (labels, value formats, position relationships).
 """
 
 import json
@@ -9,10 +9,10 @@ import re
 
 logger = logging.getLogger(__name__)
 
-# ⚠️ DrissionPage.run_js 会把脚本包成 `function(){<代码>}` 执行，
-#    所以必须用顶层 return；严禁外层再裹 (function(){...})() IIFE，
-#    否则外层函数不 return，结果在 Python 端永远是 None（实测验证）。
-#    参数通过 %s 模板硬编码到 JS 字面量（与 _DOM_EXTRACT_JS 写法一致）。
+# DrissionPage.run_js wraps the script in `function(){<code>}` for execution.
+# Therefore, top-level return must be used; it is strictly prohibited to wrap (function(){...})() IIFE in the outer layer.
+# Otherwise, the outer function does not return, and the result is always None on the Python side (verified by actual testing).
+# Parameters are hard-coded into JS literals through the %s template (consistent with _DOM_EXTRACT_JS writing method).
 _DISCOVER_JS = """
 var contextSel = %s;
 var root = document;
@@ -52,7 +52,7 @@ return JSON.stringify(result);
 
 
 def _scan_dom(page, context_selector=None):
-    """提取当前页面（或指定区域）的可交互元素列表。"""
+    """Extract the list of interactable elements of the current page (or specified area)."""
     ctx_arg = f'"{context_selector}"' if context_selector else "null"
     js = _DISCOVER_JS % ctx_arg
     try:
@@ -61,12 +61,12 @@ def _scan_dom(page, context_selector=None):
             return []
         return json.loads(raw) if isinstance(raw, str) else raw
     except Exception as e:
-        logger.warning(f"DOM 扫描失败: {e}")
+        logger.warning(f"DOM scan failed: {e}")
         return []
 
 
 def _build_selector(el):
-    """根据元素属性生成一个 CSS 选择器字符串。"""
+    """Generates a CSS selector string based on an element's properties."""
     tag = el.get("tag", "*")
     if el.get("id"):
         return f'{tag}#{el["id"]}'
@@ -87,7 +87,7 @@ def _build_selector(el):
 
 
 def _matches_hint(el, hint_keywords):
-    """判断元素是否语义匹配关键词列表中的任一关键词。"""
+    """Determine whether the element semantically matches any keyword in the keyword list."""
     searchable = " ".join([
         el.get("text", ""), el.get("aria-label", ""),
         el.get("name", ""), el.get("id", ""),
@@ -98,7 +98,7 @@ def _matches_hint(el, hint_keywords):
 
 
 def _matches_value_pattern(el, pattern):
-    """判断元素的 value 属性是否匹配给定正则。"""
+    """Determine whether the value attribute of the element matches the given regular expression."""
     val = el.get("value", "")
     if not val or not pattern:
         return False
@@ -109,12 +109,12 @@ def _matches_value_pattern(el, pattern):
 
 
 def discover_for_click(page, semantic_hint, fallback_texts=None, context_selector=None):
-    """发现可点击元素（用于 click / pick_option 动作）。
+    """Discover clickable elements (for click / pick_option actions).
 
-    策略：
-    1. 按 semantic_hint 中的关键词匹配元素的文本/属性
-    2. 如果有 fallback_texts，按精确文本匹配
-    返回 (css_selector, element_info) 或 (None, None)。
+    Strategy:
+    1. Match the text/attributes of the element according to the keywords in semantic_hint
+    2. If there is fallback_texts, match the exact text
+    Return (css_selector, element_info) or (None, None).
     """
     elements = _scan_dom(page, context_selector)
     if not elements:
@@ -140,13 +140,13 @@ def discover_for_click(page, semantic_hint, fallback_texts=None, context_selecto
 
 
 def discover_for_value(page, value_pattern, semantic_hint="", context_selector=None):
-    """发现可设值的 input 元素（用于 set_value 动作）。
+    """Found a settable input element (for use with the set_value action).
 
-    策略：
-    1. 找所有 input/textarea/select
-    2. 按 value_pattern 匹配当前值格式
-    3. 如果有 semantic_hint，用作辅助筛选
-    返回 (css_selector, element_info) 或 (None, None)。
+    Strategy:
+    1. Find all input/textarea/select
+    2. Press value_pattern to match the current value format
+    3. If there is semantic_hint, it is used as auxiliary filtering
+    Return (css_selector, element_info) or (None, None).
     """
     elements = _scan_dom(page, context_selector)
     if not elements:
@@ -172,12 +172,12 @@ def discover_for_value(page, value_pattern, semantic_hint="", context_selector=N
 
 
 def discover_for_pick(page, semantic_hint, container_hint="", context_selector=None):
-    """发现选项列表中的可选元素（用于 pick_option 动作）。
+    """Discover optional elements in an option list (used in the pick_option action).
 
-    策略：
-    1. 找 role=option / role=listitem / li / 带点击属性的元素
-    2. 在语义相关容器中搜索
-    返回 (container_selector, item_selector, element_info) 或 (None, None, None)。
+    Strategy:
+    1. Find role=option / role=listitem / li / element with click attribute
+    2. Search in semantically related containers
+    Return (container_selector, item_selector, element_info) or (None, None, None).
     """
     elements = _scan_dom(page, context_selector)
     if not elements:

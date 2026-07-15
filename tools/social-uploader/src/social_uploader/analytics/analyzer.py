@@ -1,10 +1,10 @@
-"""分析引擎 — 基于规则的结构化数据判断（不依赖 LLM）。
+"""Analysis engine—rule-based judgment on structured data (not relying on LLM).
 
-功能：
-  - 爆款/低迷识别
-  - 互动率计算
-  - 趋势对比（当前快照 vs 上一次快照）
-  - 发布节奏分析（从 summary.jsonl 读取）
+Function:
+  - Identification of hot items/downturns
+  - Interaction rate calculation
+  - Trend comparison (current snapshot vs last snapshot)
+  - Release rhythm analysis (read from summary.jsonl)
 """
 
 import json
@@ -17,33 +17,33 @@ logger = logging.getLogger(__name__)
 
 _ANALYTICS_DIR = Path.home() / ".social_uploader" / "analytics"
 
-HIT_THRESHOLD = 2.0      # 指标 > 均值 * 2 → 爆款
-FLOP_THRESHOLD = 0.3     # 指标 < 均值 * 0.3 → 低迷
+HIT_THRESHOLD = 2.0      # Indicator > Mean * 2 → Hot item
+FLOP_THRESHOLD = 0.3     # Indicator < mean * 0.3 → downturn
 
 _METRIC_LABELS = {
-    "views": "播放量",
-    "video_views": "播放量",
-    "watch_time_hours": "观看时长 (h)",
-    "subscribers": "订阅变化",
-    "impressions": "展示次数",
-    "ctr": "点击率 (%)",
-    "likes": "点赞",
-    "comments": "评论",
-    "shares": "分享",
-    "saves": "收藏",
-    "followers": "粉丝变化",
-    "following": "关注数",
-    "new_followers": "新增粉丝",
-    "profile_views": "主页访问",
-    "profile_visits": "主页访问",
-    "accounts_reached": "触达人数",
-    "hearts": "获赞总数",
-    "video_count": "视频数",
-    "estimated_reward": "预估奖励",
-    "plays": "播放量",
-    "engagement_rate": "互动率 (%)",
-    "posts": "帖子数",
-    "reels_plays": "Reels 播放",
+    "views": "Play volume",
+    "video_views": "Play volume",
+    "watch_time_hours": "Viewing time (h)",
+    "subscribers": "Subscribe to changes",
+    "impressions": "Impressions",
+    "ctr": "Click-through rate (%)",
+    "likes": "Like",
+    "comments": "Comment",
+    "shares": "share",
+    "saves": "collect",
+    "followers": "Fan changes",
+    "following": "Number of followers",
+    "new_followers": "Add new fans",
+    "profile_views": "Home page visit",
+    "profile_visits": "Home page visit",
+    "accounts_reached": "Number of people reached",
+    "hearts": "Total number of likes",
+    "video_count": "Number of videos",
+    "estimated_reward": "Estimated reward",
+    "plays": "Play volume",
+    "engagement_rate": "Interaction rate (%)",
+    "posts": "Number of posts",
+    "reels_plays": "Reels play",
 }
 
 
@@ -53,15 +53,15 @@ def analyze(
     period_days: int = 28,
     account: str = "default",
 ) -> dict:
-    """主分析入口。
+    """Main analysis entrance.
 
-    参数:
+    parameter:
       current_snapshots:  {"youtube": {...}, "tiktok": {...}, ...}
-      previous_snapshots: 同结构，上一次采集（可选）
-      period_days: 分析周期天数
-      account: 账号名，用于读取该账号自己的采集历史（不读全局 summary.jsonl）
+      previous_snapshots: Same structure, last collection (optional)
+      period_days: analysis period days
+      account: account name, used to read the account’s own collection history (the global summary.jsonl is not read)
 
-    返回 AnalysisResult dict:
+    Return AnalysisResult dict:
       {
         "generated_at": ...,
         "period_days": ...,
@@ -86,7 +86,7 @@ def analyze(
 
     for platform, snapshot in current_snapshots.items():
         if not snapshot or snapshot.get("error"):
-            result["warnings"].append(f"{platform} 采集失败: {snapshot.get('error', '无数据')}")
+            result["warnings"].append(f"{platform} collection failed: {snapshot.get('error', 'no data')}")
             continue
 
         prev = previous_snapshots.get(platform)
@@ -100,7 +100,7 @@ def analyze(
 
 
 def _analyze_platform(platform: str, current: dict, previous: dict | None) -> dict:
-    """分析单个平台的数据。"""
+    """Analyze data from a single platform."""
     account_metrics = current.get("account_metrics", {})
     video_metrics = current.get("video_metrics", [])
     prev_account = previous.get("account_metrics", {}) if previous else {}
@@ -119,14 +119,14 @@ def _analyze_platform(platform: str, current: dict, previous: dict | None) -> di
         if pct is not None:
             label = _METRIC_LABELS.get(metric, metric)
             if pct > 50:
-                highlights.append(f"[{platform}] {label} 大幅增长 +{pct:.0f}%")
+                highlights.append(f"[{platform}] {label} substantial growth +{pct:.0f}%")
             elif pct < -30:
-                warnings.append(f"[{platform}] {label} 显著下降 {pct:.0f}%")
+                warnings.append(f"[{platform}] {label} significant decrease {pct:.0f}%")
 
     if video_analysis.get("hits"):
         for i, v in enumerate(video_analysis["hits"], 1):
             views = v.get("views", 0)
-            highlights.append(f"[{platform}] 爆款视频{i} (播放量: {views})")
+            highlights.append(f"[{platform}] Popular video {i} (view count: {views})")
 
     return {
         "metrics": account_metrics,
@@ -139,7 +139,7 @@ def _analyze_platform(platform: str, current: dict, previous: dict | None) -> di
 
 
 def _compute_trend(current: dict, previous: dict) -> dict:
-    """计算指标趋势（当前 vs 上一次）。"""
+    """Calculate indicator trend (current vs last time)."""
     trend = {}
     for key, cur_val in current.items():
         try:
@@ -163,7 +163,7 @@ def _compute_trend(current: dict, previous: dict) -> dict:
 
 
 def _compute_engagement_rate(metrics: dict, platform: str) -> float | None:
-    """计算互动率 = (likes + comments + shares [+ saves]) / views。"""
+    """Calculate interaction rate = (likes + comments + shares [+ saves]) / views."""
     views_key = "views" if platform == "youtube" else "video_views"
     views = _as_float(metrics.get(views_key, metrics.get("views", metrics.get("accounts_reached"))))
     if not views or views == 0:
@@ -179,7 +179,7 @@ def _compute_engagement_rate(metrics: dict, platform: str) -> float | None:
 
 
 def _analyze_videos(video_metrics: list[dict], platform: str) -> dict:
-    """分析视频列表：排名、爆款/低迷标记。"""
+    """Analyze the video list: ranking, hit/down mark."""
     if not video_metrics:
         return {"ranked": [], "hits": [], "flops": [], "count": 0}
 
@@ -211,7 +211,7 @@ def _analyze_videos(video_metrics: list[dict], platform: str) -> dict:
 
 
 def _analyze_publish_cadence(period_days: int = 28, account: str = "default") -> dict:
-    """从该账号的 analytics/history.jsonl 中分析采集节奏（不读取全局 summary.jsonl）。"""
+    """Analyze the collection rhythm from the account's analytics/history.jsonl (the global summary.jsonl is not read)."""
     cadence = {
         "total_uploads": 0,
         "successful_uploads": 0,

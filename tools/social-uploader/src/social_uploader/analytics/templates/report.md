@@ -1,6 +1,6 @@
-# 社交媒体数据简报
+# Social media data briefing
 
-> 生成时间: {{ generated_at }}  |  分析周期: 最近 {{ period_days }} 天
+> Generation time: {{ generated_at }} | Analysis period: Last {{ period_days }} days
 
 {% set ns = namespace(total_views=0, total_likes=0, total_comments=0, platform_count=0) %}
 {% for platform, data in platforms.items() %}
@@ -12,38 +12,38 @@
 
 ---
 
-## 一、下一步创作建议
+## 1. Suggestions for next step creation
 
 {% if advice.summary %}
 > {{ advice.summary }}
 {% endif %}
 
 {% if advice.recommended_topics %}
-### 推荐主题
+### Recommended topics
 {% for topic in advice.recommended_topics %}
 {{ loop.index }}. {{ topic }}
 {% endfor %}
 {% endif %}
 
 {% if advice.content_format %}
-### 内容形式
+### Content form
 {{ advice.content_format }}
 {% endif %}
 
 {% if advice.title_hooks %}
-### 标题参考
+### Title reference
 {% for hook in advice.title_hooks %}
 - {{ hook }}
 {% endfor %}
 {% endif %}
 
 {% if advice.publish_schedule %}
-### 发布节奏
+### release cadence
 {{ advice.publish_schedule }}
 {% endif %}
 
 {% if advice.improvements %}
-### 改进方向
+### Directions for improvement
 {% for item in advice.improvements %}
 - {{ item }}
 {% endfor %}
@@ -51,7 +51,7 @@
 
 ---
 
-## 二、关键发现
+## 2. Key findings
 
 {% if highlights %}
 {% for h in highlights[:3] %}
@@ -64,33 +64,33 @@
 {% endfor %}
 {% endif %}
 {% if not highlights and not warnings %}
-- 📊 已采集 {{ ns.platform_count }} 个平台数据，暂无显著异动
+- 📊 {{ ns.platform_count }} platform data has been collected, no significant changes yet
 {% endif %}
 
 ---
 
-## 三、数据总览
+## 3. Data Overview
 
 {% for platform, data in platforms.items() %}
 ### {{ platform | upper }}
 
-| 指标 | 当前值 | 变化 |
+| Indicators | Current Value | Change |
 |------|--------|------|
 {% for metric, info in data.trend.items() %}
 | {{ metric_label(metric) }} | {{ info.current | format_number }} | {{ trend_arrow(info.change_pct) }} |
 {% endfor %}
 
 {% if data.engagement_rate is not none %}
-**互动率**: {{ data.engagement_rate }}%
+**Interaction rate**: {{ data.engagement_rate }}%
 {% endif %}
 
 {% endfor %}
 
 {% set cross = build_cross_platform_summary(platforms) %}
 {% if cross %}
-### 跨平台对比
+### Cross-platform comparison
 
-| 指标 |{% for p in platforms %} {{ p | upper }} |{% endfor %}
+| Indicators |{% for p in platforms %} {{ p | upper }} |{% endfor %}
 
 |------|{% for p in platforms %}--------|{% endfor %}
 
@@ -101,58 +101,58 @@
 {% endif %}
 
 {% if publish_cadence.total_uploads > 0 %}
-### 发布节奏
+### release cadence
 
-| 项目 | 数值 |
+| Item | Value |
 |------|------|
-| 周期内上传次数 | {{ publish_cadence.total_uploads }} |
-| 成功 / 失败 | {{ publish_cadence.successful_uploads }} / {{ publish_cadence.failed_uploads }} |
+| Number of uploads in the cycle | {{ publish_cadence.total_uploads }} |
+| Success / Failure | {{ publish_cadence.successful_uploads }} / {{ publish_cadence.failed_uploads }} |
 {% if publish_cadence.avg_interval_days %}
-| 平均发布间隔 | {{ publish_cadence.avg_interval_days }} 天 |
+| Average publishing interval | {{ publish_cadence.avg_interval_days }} days |
 {% endif %}
 {% for p, count in publish_cadence.by_platform.items() %}
-| {{ p }} 上传次数 | {{ count }} |
+| {{ p }} Number of uploads | {{ count }} |
 {% endfor %}
 {% endif %}
 
 ---
 
-## 四、内容表现
+## 4. Content performance
 
 {% for platform, data in platforms.items() %}
 {% if data.videos.ranked %}
 {% set cols = detect_video_columns(data.videos.ranked) %}
 {% set display_cols = cols[:6] %}
-### {{ platform | upper }} 视频详情 (共 {{ data.videos.count }} 条)
+### {{ platform | upper }} video details ({{ data.videos.count }} in total)
 
-| # | 标题 |{% for c in display_cols %} {{ video_metric_label(c) }} |{% endfor %} 标记 |
+| # | Title |{% for c in display_cols %} {{ video_metric_label(c) }} |{% endfor %} Tags |
 |---|------|{% for c in display_cols %}--------|{% endfor %}------|
 {% for v in data.videos.ranked %}
-| {{ loop.index }} | {{ v.title | truncate(40) }} |{% for c in display_cols %} {{ v.get(c) | format_number }} |{% endfor %} {% if v in data.videos.hits %}🔥 爆款{% elif v in data.videos.flops %}⚠️ 低迷{% endif %} |
+| {{ loop.index }} | {{ v.title | truncate(40) }} |{% for c in display_cols %} {{ v.get(c) | format_number }} |{% endfor %} {% if v in data.videos.hits %}🔥 Hot hit {% elif v in data.videos.flops %}⚠️ Downturn {% endif %} |
 {% endfor %}
 
 {% if data.videos.mean_views is defined %}
-> 平均播放量: {{ data.videos.mean_views | format_number }}  |  爆款阈值: > 均值 {{ hit_threshold }}x  |  低迷阈值: < 均值 {{ flop_threshold }}x
+> Average views: {{ data.videos.mean_views | format_number }} | Hot hit threshold: > Average {{ hit_threshold }}x | Low threshold: < Average {{ flop_threshold }}x
 {% endif %}
 
 {% if data.videos.hits %}
-**🔥 爆款视频** (播放 > 均值 {{ hit_threshold }}x):
+**🔥 Popular Video** (Play > Mean {{ hit_threshold }}x):
 {% for v in data.videos.hits %}
-- {{ v.title }} ({{ v.views | format_number }} 播放)
+- {{ v.title }} ({{ v.views | format_number }} play)
 {% endfor %}
 {% endif %}
 
 {% if data.videos.flops %}
-**⚠️ 低迷视频** (播放 < 均值 {{ flop_threshold }}x):
+**⚠️ Downturn Video** (Play < mean {{ flop_threshold }}x):
 {% for v in data.videos.flops %}
-- {{ v.title }} ({{ v.views | format_number }} 播放)
+- {{ v.title }} ({{ v.views | format_number }} play)
 {% endfor %}
 {% endif %}
 {% endif %}
 {% endfor %}
 
 {% if highlights %}
-### 亮点
+### Highlights
 
 {% for h in highlights %}
 - ✅ {{ h }}
@@ -160,7 +160,7 @@
 {% endif %}
 
 {% if warnings %}
-### 预警
+### early warning
 
 {% for w in warnings %}
 - ⚠️ {{ w }}
@@ -169,4 +169,4 @@
 
 ---
 
-*报告由 social-upload monitor 自动生成 | 建议来源: {{ advice.source | default("rules") }}*
+*Report automatically generated by social-upload monitor | Suggested source: {{ advice.source | default("rules") }}*

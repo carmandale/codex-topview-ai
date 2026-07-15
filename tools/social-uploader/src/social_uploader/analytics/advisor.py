@@ -1,9 +1,9 @@
-"""创作建议生成 — 纯规则引擎，基于分析结果输出可执行建议。
+"""Creation suggestion generation - a pure rules engine that outputs executable suggestions based on analysis results.
 
-设计原则：
-- 不依赖任何外部 LLM 服务（无网络、无 API Key、无超时风险）
-- 输出字段保持与历史 LLM 版本一致，确保 reporter.py 模板兼容
-- 建议必须基于真实数据数值，避免空泛口号
+Design principles:
+- Does not rely on any external LLM service (no network, no API Key, no timeout risk)
+- Output fields remain consistent with historical LLM versions to ensure reporter.py template compatibility
+- Suggestions must be based on real data values ​​and avoid empty slogans
 """
 
 import logging
@@ -16,14 +16,14 @@ _PLATFORM_DISPLAY = {
     "youtube": "YouTube",
     "tiktok": "TikTok",
     "instagram": "Instagram",
-    "douyin": "抖音",
+    "douyin": "Tik Tok",
 }
 
 _PLATFORM_FORMAT_TIPS = {
-    "youtube": "横屏 16:9 长视频（5-15 分钟）+ Shorts 竖屏（< 60 秒）双轨并行，长视频留住订阅，Shorts 拉新",
-    "tiktok": "竖屏 9:16，时长 15-60 秒，前 3 秒必须有强 hook（反差/悬念/视觉冲击）",
-    "instagram": "Reels 优先（竖屏 9:16，15-30 秒），封面统一风格，主题集中便于建立账号识别度",
-    "douyin": "竖屏 9:16，15-60 秒，开头 3 秒强冲突或反转，配合热门 BGM 提升完播",
+    "youtube": "Horizontal screen 16:9 long video (5-15 minutes) + Shorts vertical screen (< 60 seconds) dual-track parallel, long video retains subscriptions, and Shorts attract new users",
+    "tiktok": "Vertical screen 9:16, duration 15-60 seconds, the first 3 seconds must have a strong hook (contrast/suspense/visual impact)",
+    "instagram": "Reels priority (vertical screen 9:16, 15-30 seconds), the cover has a unified style, and the theme is concentrated to facilitate the establishment of account recognition.",
+    "douyin": "Vertical screen 9:16, 15-60 seconds, strong conflict or reversal in the first 3 seconds, combined with popular BGM to improve the completion of the broadcast",
 }
 
 _PLATFORM_TITLE_HOOKS = {
@@ -43,15 +43,15 @@ _PLATFORM_TITLE_HOOKS = {
         "The truth about ___",
     ],
     "douyin": [
-        "千万别这样做___",
-        "原来___还可以这样",
-        "看完不许哭",
+        "Don't do this___",
+        "It turns out ___ can still be like this",
+        "Don't cry after reading this",
     ],
 }
 
 
 def generate_advice(analysis_result: dict) -> dict:
-    """根据分析结果生成创作建议（纯规则，无 LLM 依赖）。"""
+    """Generate creative suggestions based on analysis results (pure rules, no LLM dependencies)."""
     advice = {
         "recommended_topics": [],
         "content_format": "",
@@ -66,7 +66,7 @@ def generate_advice(analysis_result: dict) -> dict:
     period_days = analysis_result.get("period_days", _DEFAULT_PERIOD_DAYS)
 
     if not platforms:
-        advice["summary"] = "未采集到任何平台数据，请先确认浏览器已登录目标平台再重试。"
+        advice["summary"] = "No platform data was collected. Please confirm that the browser has logged in to the target platform and try again."
         return advice
 
     engagement_rates = []
@@ -132,25 +132,28 @@ def generate_advice(analysis_result: dict) -> dict:
         worst = engagement_rates[-1]
         advice["improvements"].insert(
             0,
-            f"{best[1]} 互动率最高（{best[2]}%），建议优先投入精力做系列化内容",
+            f"{best[1]} has the highest interaction rate ({best[2]}%). It is recommended to invest in serialized content first.",
         )
         if len(engagement_rates) > 1 and worst[2] < best[2] * 0.5:
             advice["improvements"].append(
-                f"{worst[1]} 互动率仅 {worst[2]}%，落后 {best[1]} 较多，"
-                "可考虑暂停投入或参考 {best_label} 的内容形式".format(best_label=best[1])
+                f"The interaction rate of {worst[1]} is only {worst[2]}%, which is much behind {best[1]}."
+                "You may consider suspending investment or refer to the content format of {best_label}".format(best_label=best[1])
             )
 
     if has_hits and not advice["recommended_topics"]:
-        advice["recommended_topics"].append("从已有爆款视频提炼共性主题，做 3-5 期同主题系列内容")
+        advice["recommended_topics"].append("Extract common themes from existing popular videos and create 3-5 issues of a series of content with the same theme")
 
-    if has_flops and not any("低迷" in t or "改进" in t for t in advice["improvements"]):
-        advice["improvements"].append("低迷视频复盘：检查标题吸引力、封面对比度、前 3 秒留存率")
+    if has_flops and not any(
+        "downturn" in t.lower() or "improv" in t.lower()
+        for t in advice["improvements"]
+    ):
+        advice["improvements"].append("Sluggish video review: Check title appeal, cover contrast, retention rate in the first 3 seconds")
 
     if not advice["recommended_topics"]:
-        advice["recommended_topics"].append("数据量较少，建议先稳定每周发布 2-3 条，积累 4 周后再做主题分析")
+        advice["recommended_topics"].append("The amount of data is small. It is recommended to publish 2-3 items per week stably first, and then do thematic analysis after accumulating for 4 weeks.")
 
     if not advice["improvements"]:
-        advice["improvements"].append("各项指标稳定，可尝试加大单期投入或测试新选题方向")
+        advice["improvements"].append("All indicators are stable. You can try to increase investment in a single period or test new topic selection directions.")
 
     advice["recommended_topics"] = advice["recommended_topics"][:5]
     advice["improvements"] = advice["improvements"][:6]
@@ -170,7 +173,7 @@ def generate_advice(analysis_result: dict) -> dict:
 
 
 def _append_platform_format_tip(advice: dict, platform: str, hits: list, flops: list, metrics: dict) -> None:
-    """根据平台特性追加内容形式建议（仅追加首个明显落后的平台提示）。"""
+    """Add content form suggestions based on platform characteristics (only the first platform tip that is obviously lagging behind will be added)."""
     if advice["content_format"]:
         return
     tip = _PLATFORM_FORMAT_TIPS.get(platform)
@@ -182,7 +185,7 @@ def _append_platform_format_tip(advice: dict, platform: str, hits: list, flops: 
 
 
 def _append_platform_title_hooks(advice: dict, platform: str, hits: list) -> None:
-    """有爆款时优先用爆款平台的标题模板。"""
+    """When there is a popular product, the title template of the popular platform will be used first."""
     if advice["title_hooks"]:
         return
     if not hits:
@@ -195,7 +198,7 @@ def _append_platform_title_hooks(advice: dict, platform: str, hits: list) -> Non
 def _build_per_platform_topics(
     platform: str, plat_label: str, hits: list, flops: list, metrics: dict
 ) -> list:
-    """基于单平台数据的具体主题建议。"""
+    """Specific topic recommendations based on single platform data."""
     tips = []
     if hits:
         top = hits[0]
@@ -203,16 +206,19 @@ def _build_per_platform_topics(
         views = top.get("views")
         if title and views is not None:
             preview = title[:24] + ("…" if len(title) > 24 else "")
-            tips.append(f"[{plat_label}] 复制爆款方向：《{preview}》（{_fmt_num(views)} 播放），做 3 期同主题")
+            tips.append(
+                f'[{plat_label}] Follow the winning pattern: "{preview}" '
+                f"({_fmt_num(views)} views), then create three videos on the same theme"
+            )
         elif views is not None:
-            tips.append(f"[{plat_label}] 围绕最高播放视频（{_fmt_num(views)}）做系列化复制")
+            tips.append(f"[{plat_label}] Make a series of copies around the most played video ({_fmt_num(views)})")
 
     if platform == "youtube" and metrics.get("subscribers") is not None:
         subs = float(metrics.get("subscribers") or 0)
         if subs < 1000:
-            tips.append(f"[{plat_label}] 订阅 {_fmt_num(subs)} < 1000，优先做订阅引导（结尾 CTA + Shorts 引流）")
+            tips.append(f"[{plat_label}] Subscribe to {_fmt_num(subs)} < 1000, give priority to subscription guidance (end CTA + Shorts to attract traffic)")
         elif subs < 10000:
-            tips.append(f"[{plat_label}] 订阅 {_fmt_num(subs)}，建议做 1-2 期长视频建立专业度，搭配 Shorts 拉量")
+            tips.append(f"[{plat_label}] Subscribe to {_fmt_num(subs)}, it is recommended to make 1-2 long videos to establish professionalism, and use Shorts to increase the volume")
 
     if platform == "tiktok" and metrics:
         followers = metrics.get("followers")
@@ -220,7 +226,7 @@ def _build_per_platform_topics(
             try:
                 fnum = float(followers)
                 if fnum < 1000:
-                    tips.append(f"[{plat_label}] 粉丝 {_fmt_num(fnum)} < 1000，建议每天 1-2 条蹭热点 BGM 测试爆款")
+                    tips.append(f"[{plat_label}] Fans {_fmt_num(fnum)} < 1000, it is recommended to post 1-2 hot BGM posts every day to test popular items")
             except (TypeError, ValueError):
                 pass
 
@@ -228,7 +234,7 @@ def _build_per_platform_topics(
 
 
 def _build_trend_improvements(plat_label: str, trend: dict) -> list:
-    """基于趋势变化生成改进项（聚焦显著下滑指标）。"""
+    """Generate improvements based on trend changes (focusing on significant decline indicators)."""
     tips = []
     for metric, info in (trend or {}).items():
         if not isinstance(info, dict):
@@ -241,21 +247,21 @@ def _build_trend_improvements(plat_label: str, trend: dict) -> list:
         except (TypeError, ValueError):
             continue
         if pct_val <= -30:
-            tips.append(f"[{plat_label}] {metric} 较上次下降 {abs(pct_val):.0f}%，建议复盘最近一周内容")
+            tips.append(f"[{plat_label}] {metric} has dropped {abs(pct_val):.0f}% compared to the last time. It is recommended to review the content of the last week.")
         elif pct_val >= 50:
-            tips.append(f"[{plat_label}] {metric} 较上次上升 {pct_val:.0f}%，可加大同类内容产出")
+            tips.append(f"[{plat_label}] {metric} increased by {pct_val:.0f}% compared to the last time, which can increase the output of similar content")
     return tips
 
 
 def _build_metrics_improvements(plat_label: str, metrics: dict, video_count: int) -> list:
-    """基于绝对值阈值的改进建议。"""
+    """Improvement suggestions based on absolute value thresholds."""
     tips = []
     views = metrics.get("views")
     if views is not None:
         try:
             v = float(views)
             if v < 100 and video_count > 0:
-                tips.append(f"[{plat_label}] 周期内总播放仅 {_fmt_num(v)}，建议优化封面/标题点击率")
+                tips.append(f"[{plat_label}] The total number of plays in the cycle is only {_fmt_num(v)}. It is recommended to optimize the cover/title click-through rate")
         except (TypeError, ValueError):
             pass
 
@@ -264,7 +270,7 @@ def _build_metrics_improvements(plat_label: str, metrics: dict, video_count: int
         try:
             w = float(watch_time)
             if w < 10 and video_count > 0:
-                tips.append(f"[{plat_label}] 总观看时长 {w:.1f} 小时偏低，需提升完播率（开头钩子 + 节奏）")
+                tips.append(f"[{plat_label}] The total viewing time {w:.1f} hours is low, the completion rate needs to be improved (opening hook + rhythm)")
         except (TypeError, ValueError):
             pass
 
@@ -272,32 +278,32 @@ def _build_metrics_improvements(plat_label: str, metrics: dict, video_count: int
 
 
 def _build_publish_schedule(cadence: dict, period_days: int) -> str:
-    """根据发布节奏数据生成节奏建议。"""
+    """Generate cadence recommendations based on release cadence data."""
     total = cadence.get("total_uploads", 0) or 0
     avg_interval = cadence.get("avg_interval_days")
     successful = cadence.get("successful_uploads", 0) or 0
     failed = cadence.get("failed_uploads", 0) or 0
 
     if total == 0:
-        return f"周期内（{period_days} 天）无上传记录，建议立即建立每周 2-3 条的发布节奏"
+        return f"There is no upload record within the cycle ({period_days} days). It is recommended to immediately establish a publishing rhythm of 2-3 articles per week."
 
     if avg_interval is None:
-        return f"周期内共上传 {total} 次（成功 {successful}、失败 {failed}），建议保持稳定输出"
+        return f"{total} was uploaded in total during the cycle ({successful} was successful, {failed} was failed), it is recommended to maintain stable output."
 
     try:
         interval = float(avg_interval)
     except (TypeError, ValueError):
-        return f"周期内共上传 {total} 次（成功 {successful}、失败 {failed}）"
+        return f"{total} uploads in total during the cycle ({successful} successful, {failed} failed)"
 
     if interval > 7:
-        target = "每周 2-3 条"
-        return f"当前平均 {interval:.1f} 天发一条，频率偏低，建议提高到 {target}（成功 {successful}/失败 {failed}）"
+        target = "2-3 articles per week"
+        return f"The current average is {interval:.1f}, one message is sent every day, and the frequency is low. It is recommended to increase it to {target} (successful {successful}/failure {failed})"
     if interval < 0.5:
         rate = 1 / interval if interval > 0 else 0
-        return f"当前每天约发 {rate:.0f} 条，节奏过密，注意保证内容质量与审核通过率（成功 {successful}/失败 {failed}）"
+        return f"Currently, approximately {rate:.0f} are posted every day, and the pace is too dense. Pay attention to ensuring content quality and review pass rate (successful {successful}/failure {failed})"
     if interval <= 3:
-        return f"当前平均 {interval:.1f} 天一条，节奏健康，建议保持（成功 {successful}/失败 {failed}）"
-    return f"当前平均 {interval:.1f} 天一条，可微调到每周 2-3 条以获得更稳定的算法分发（成功 {successful}/失败 {failed}）"
+        return f"The current average {interval:.1f} is one per day, the rhythm is healthy, it is recommended to maintain (successful {successful}/failure {failed})"
+    return f"The current average {interval:.1f} is one piece per day, which can be fine-tuned to 2-3 pieces per week to obtain a more stable algorithm distribution (successful {successful}/failure {failed})"
 
 
 def _build_summary(
@@ -309,36 +315,36 @@ def _build_summary(
     has_hits: bool,
     has_flops: bool,
 ) -> str:
-    """生成 2-3 句话的总结。"""
+    """Generate a 2-3 sentence summary."""
     parts = []
     plat_count = len(platform_breakdowns)
     if plat_count:
         plat_names = "、".join(p["label"] for p in platform_breakdowns)
-        parts.append(f"近 {period_days} 天分析了 {plat_names} 共 {plat_count} 个平台 {total_videos} 条视频")
+        parts.append(f"{plat_names} total {plat_count} platforms {total_videos} videos analyzed in the past {period_days} days")
 
     if engagement_rates:
         engagement_rates_sorted = sorted(engagement_rates, key=lambda x: x[2], reverse=True)
         best = engagement_rates_sorted[0]
-        parts.append(f"{best[1]} 互动率 {best[2]}% 表现最佳")
+        parts.append(f"{best[1]} Interaction rate {best[2]}% Top performer")
 
     cadence_total = cadence.get("total_uploads", 0) or 0
     if cadence_total:
-        parts.append(f"周期内上传 {cadence_total} 次")
+        parts.append(f"Uploaded {cadence_total} times during the cycle")
 
     if has_hits and has_flops:
-        parts.append("内容呈两极分化，建议系列化复制爆款 + 复盘低迷视频")
+        parts.append("The content is polarized. It is recommended to copy popular videos in series + review sluggish videos.")
     elif has_hits:
-        parts.append("已出现爆款，建议立即跟进同主题系列")
+        parts.append("A popular item has appeared. It is recommended to follow up the series with the same theme immediately.")
     elif has_flops:
-        parts.append("整体表现偏低，建议优化标题、封面、前 3 秒")
+        parts.append("The overall performance is low. It is recommended to optimize the title, cover, and first 3 seconds.")
     else:
-        parts.append("数据稳定，可尝试加大投入测试新方向")
+        parts.append("The data is stable, you can try to increase investment in testing new directions")
 
     return "；".join(parts) + "。"
 
 
 def _fmt_num(value) -> str:
-    """格式化数字：1234 → 1.2k，1500000 → 1.5M。"""
+    """Formatted numbers: 1234 → 1.2k, 1500000 → 1.5M."""
     try:
         n = float(value)
     except (TypeError, ValueError):

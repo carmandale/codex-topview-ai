@@ -1,16 +1,16 @@
-"""三层元素查找器 — 轨道 A（快速选择器）→ Tier 2（本地启发式）→ 轨道 B（AI 语义定位）
+"""Three-tier element finder — Track A (quick selector) → Tier 2 (local heuristic) → Track B (AI semantic targeting)
 
-【三层逐级兜底策略】
-轨道 A (Fast Path):   读取 button_config.json 选择器列表，1.5s 快速尝试
-Tier 2 (Heuristic):   本地 DOM 关键词匹配，不调 API，成功后自动回写
-轨道 B (AI Path):     通过 UltimateLocator 结构化语义查询，成功后自动回写
+[Three layers of step-by-step strategy]
+Track A (Fast Path): Read button_config.json selector list, 1.5s fast try
+Tier 2 (Heuristic): Local DOM keyword matching, no API adjustment, automatic write-back after success
+Track B (AI Path): Structured semantic query through UltimateLocator, automatic write-back after success
 
-【自动回写机制】
-Tier 2 / 轨道 B 成功后，将生效的选择器回写到 button_config.json，
-使得下次同场景直走轨道 A，系统选择器库随使用自动增长。
+[Automatic write-back mechanism]
+After Tier 2 / Track B is successful, the effective selector will be written back to button_config.json.
+So that next time you go straight to track A in the same scene, the system selector library will automatically grow with use.
 
-【保留的函数】
-load_selectors / reload_selectors / add_selector — 供 fix-selector CLI 和自动修复流程使用
+[Reserved functions]
+load_selectors / reload_selectors / add_selector — used by the fix-selector CLI and automatic fix processes
 """
 
 import json
@@ -42,9 +42,9 @@ _EXPECTED_ELEMENT = {
 
 
 def _verify_element_type(el, key):
-    """验证元素标签/属性是否符合预期，防止 AI 返回错误类型的元素。
+    """Verify that element tags/attributes are as expected, preventing AI from returning the wrong type of element.
 
-    返回 True 表示验证通过或无需验证。
+    Returning True indicates that verification passed or no verification is required.
     """
     spec = _EXPECTED_ELEMENT.get(key)
     if not spec:
@@ -55,14 +55,14 @@ def _verify_element_type(el, key):
         return True
     expected_tags = spec.get("tags", set())
     if expected_tags and tag not in expected_tags:
-        logger.debug(f"    类型断言失败: {key} 期望 {expected_tags}，实际 <{tag}>")
+        logger.debug(f"    Type assertion failed: {key} expected {expected_tags}, actual <{tag}>")
         return False
     expected_attrs = spec.get("attrs", {})
     for attr_name, attr_val in expected_attrs.items():
         try:
             actual = (el.attr(attr_name) or "").lower()
             if actual != attr_val.lower():
-                logger.debug(f"    属性断言失败: {key} 期望 {attr_name}={attr_val}，实际 {actual}")
+                logger.debug(f"    Property assertion failed: {key} expected {attr_name}={attr_val}, actual {actual}")
                 return False
         except Exception:
             return False
@@ -70,7 +70,7 @@ def _verify_element_type(el, key):
 
 
 def load_selectors(platform):
-    """读取 button_config.json 中指定平台的选择器字典，带文件级缓存。"""
+    """Read the selector dictionary for the specified platform in button_config.json, with file-level caching."""
     if platform in _cache:
         return _cache[platform]
     try:
@@ -78,34 +78,34 @@ def load_selectors(platform):
         _cache.update(data)
         return _cache.get(platform, {})
     except Exception as e:
-        logger.warning(f"button_config.json 读取失败，回退到空字典: {e}")
+        logger.warning(f"Failed to read button_config.json, falling back to empty dictionary: {e}")
         return {}
 
 
 def reload_selectors():
-    """清除缓存，强制下次调用 load_selectors 时重新读取文件。"""
+    """Clears the cache, forcing the file to be re-read the next time load_selectors is called."""
     _cache.clear()
 
 
 def add_selector(platform, key, selector):
-    """安全地将新选择器插入 button_config.json 对应 platform.key 列表开头。
+    """Safely insert the new selector into button_config.json at the beginning of the corresponding platform.key list.
 
-    返回 (success: bool, message: str)。
+    Return (success: bool, message: str).
     """
     try:
         data = json.loads(_SELECTORS_PATH.read_text(encoding="utf-8"))
     except Exception as e:
-        return False, f"读取 button_config.json 失败: {e}"
+        return False, f"Failed to read button_config.json: {e}"
 
     if platform not in data:
-        return False, f"平台 \"{platform}\" 不存在于 button_config.json（可用: {', '.join(data.keys())}）"
+        return False, f"Platform \"{platform}\" does not exist in button_config.json (available: {', '.join(data.keys())})"
 
     if key not in data[platform]:
-        return False, f"key \"{key}\" 不存在于 {platform}（可用: {', '.join(data[platform].keys())}）"
+        return False, f"key \"{key}\" does not exist in {platform} (available: {', '.join(data[platform].keys())})"
 
     current_list = data[platform][key]
     if selector in current_list:
-        return True, f"选择器已存在于 {platform}.{key}，无需重复添加"
+        return True, f"The selector already exists in {platform}.{key}, no need to add it again"
 
     current_list.insert(0, selector)
 
@@ -115,17 +115,17 @@ def add_selector(platform, key, selector):
             encoding="utf-8",
         )
     except Exception as e:
-        return False, f"写入 button_config.json 失败: {e}"
+        return False, f"Failed to write button_config.json: {e}"
 
     reload_selectors()
     total = len(current_list)
-    return True, f"OK: 已将 \"{selector}\" 添加到 {platform}.{key} 选择器列表开头（共 {total} 个）"
+    return True, f"OK: \"{selector}\" has been added to the beginning of the {platform}.{key} selector list ({total} in total)"
 
 
 def _track_a(page, platform, key):
-    """轨道 A：button_config.json 快速路径，1.5s 超时。
+    """Track A: button_config.json fast path, 1.5s timeout.
 
-    返回 (element, selector) 或 (None, None)。
+    Return (element, selector) or (None, None).
     """
     sels = load_selectors(platform).get(key, [])
     if not sels:
@@ -144,10 +144,10 @@ def _track_a(page, platform, key):
 
 
 def _tier2_heuristic(page, platform, key):
-    """Tier 2：本地 DOM 启发式，不调 API，基于关键词匹配。
+    """Tier 2: Local DOM heuristic, no API adjustment, based on keyword matching.
 
-    从 platform_semantics 获取语义 hint，用 dom_heuristic 在页面中搜索。
-    返回 (element, selector) 或 (None, None)。
+    Get semantic hints from platform_semantics and search the page with dom_heuristic.
+    Return (element, selector) or (None, None).
     """
     try:
         from social_uploader.tools.platform_semantics import get_semantic_query
@@ -177,9 +177,9 @@ def _tier2_heuristic(page, platform, key):
 
 
 def _track_b(page, platform, key):
-    """轨道 B：AI 语义定位路径。
+    """Track B: AI semantic positioning path.
 
-    返回 (element, selector) 或 (None, None)。
+    Return (element, selector) or (None, None).
     """
     try:
         from social_uploader.tools.pattern_checker import dismiss_popups, sweep_modals
@@ -192,7 +192,7 @@ def _track_b(page, platform, key):
         from social_uploader.tools.platform_semantics import get_semantic_query
         from social_uploader.tools.ai_locator import UltimateLocator
     except ImportError:
-        logger.debug("AI 定位模块不可用，跳过轨道 B")
+        logger.debug("AI positioning module is unavailable, skipping track B")
         return None, None
 
     query_dict = get_semantic_query(platform, key)
@@ -202,9 +202,9 @@ def _track_b(page, platform, key):
 
 
 def _auto_writeback(platform, key, selector):
-    """将 Tier 2 / 轨道 B 发现的有效选择器回写到 button_config.json。
+    """Write back valid selectors discovered by Tier 2 / Track B to button_config.json.
 
-    跳过 _WRITEBACK_BLOCKLIST 中的 key（如 close_buttons）。
+    Skip keys in _WRITEBACK_BLOCKLIST (such as close_buttons).
     """
     if key in _WRITEBACK_BLOCKLIST:
         return
@@ -212,45 +212,45 @@ def _auto_writeback(platform, key, selector):
         return
     blocked_vals = _WRITEBACK_VALUE_BLOCKLIST.get(key, set())
     if selector in blocked_vals:
-        logger.info(f"  ⛔ 拒绝回写: {platform}.{key} ← {selector} (在值黑名单中)")
+        logger.info(f"  ⛔ Deny writeback: {platform}.{key} ← {selector} (in value blacklist)")
         return
     ok, msg = add_selector(platform, key, selector)
     if ok:
-        logger.info(f"  📝 自动回写: {platform}.{key} ← {selector}")
+        logger.info(f"  📝 Automatic write-back: {platform}.{key} ← {selector}")
 
 
 def find_element(page, platform, key, timeout=5):
-    """三层逐级查找元素（带元素类型断言）。
+    """Three-level search for elements step by step (with element type assertion).
 
-    轨道 A (Fast Path):   button_config.json 主选择器，1.5s 超时
-    Tier 2 (Heuristic):   本地 DOM 关键词匹配，成功后回写
-    轨道 B (AI Path):     UltimateLocator 语义查找，成功后回写
+    Track A (Fast Path): button_config.json main selector, 1.5s timeout
+    Tier 2 (Heuristic): Local DOM keyword matching, write back after success
+    Track B (AI Path): UltimateLocator semantic search, write back after success
 
-    每层返回的元素都经过 _verify_element_type 断言，
-    防止 AI 或启发式返回错误类型的元素（如把 div 当 input）。
+    The elements returned by each level are subject to the _verify_element_type assertion,
+    Prevent AI or heuristics from returning the wrong type of element (such as treating a div as an input).
 
-    返回 (element, selector) 或 (None, None)。
+    Return (element, selector) or (None, None).
     """
     el, sel = _track_a(page, platform, key)
     if el and _verify_element_type(el, key):
         return el, sel
 
-    logger.info(f"  ⚡ 轨道 A 未命中 {platform}.{key}，尝试本地启发式 Tier 2...")
+    logger.info(f"  ⚡ Track A miss {platform}.{key}, trying local heuristic Tier 2...")
     el, sel = _tier2_heuristic(page, platform, key)
     if el and _verify_element_type(el, key):
-        logger.info(f"  🔍 Tier 2 命中 {platform}.{key}: {sel}")
+        logger.info(f"  🔍 Tier 2 hits {platform}.{key}: {sel}")
         _auto_writeback(platform, key, sel)
         return el, sel
 
-    logger.info(f"  🔍 Tier 2 未命中，切换到 AI 轨道 B...")
+    logger.info(f"  🔍 Tier 2 miss, switch to AI track B...")
     el, sel = _track_b(page, platform, key)
     if el and _verify_element_type(el, key):
-        logger.info(f"  🧠 轨道 B 命中 {platform}.{key}: {sel}")
+        logger.info(f"  🧠 Track B hits {platform}.{key}: {sel}")
         _auto_writeback(platform, key, sel)
         return el, sel
 
     if not load_selectors(platform).get(key):
-        logger.warning(f"button_config.json 中未找到 {platform}.{key}")
+        logger.warning(f"{platform}.{key} not found in button_config.json")
     return None, None
 
 
@@ -262,12 +262,12 @@ _CRITICAL_KEYS = {
 
 
 def preflight_check(page, platform):
-    """上传前检查关键选择器是否存活（仅 Track A）。
+    """Check if key selectors are alive before uploading (Track A only).
 
-    在上传流程开始前调用，快速发现 UI 变更导致的选择器失效。
-    不触发 Tier 2 / Track B，避免产生副作用。
+    Called before the upload process starts, you can quickly detect selector failures caused by UI changes.
+    Does not trigger Tier 2/Track B to avoid side effects.
 
-    返回 broken key 列表（空列表 = 全部健康）。
+    Returns a list of broken keys (empty list = full health).
     """
     keys = _CRITICAL_KEYS.get(platform, [])
     broken = []
@@ -277,18 +277,18 @@ def preflight_check(page, platform):
             broken.append(key)
     if broken:
         logger.warning(
-            f"  ⚠️ 选择器预检: {platform} 有 {len(broken)} 个关键选择器失效: {broken}"
+            f"  ⚠️ Selector preflight: {platform} There are {len(broken)} key selectors invalid: {broken}"
         )
     else:
-        logger.info(f"  ✅ 选择器预检: {platform} 全部 {len(keys)} 个关键选择器正常")
+        logger.info(f"  ✅ Selector pre-check: {platform} all {len(keys)} key selectors are OK")
     return broken
 
 
 def find_and_click(page, platform, key, timeout=5):
-    """查找元素并点击，带点击后状态检查。
+    """Find an element and click it, with post-click state checking.
 
-    点击后检查页面 URL 或 DOM 是否变化，无变化则重试轨道 B。
-    返回 (clicked: bool, element, selector)。
+    After clicking, check whether the page URL or DOM changes. If there is no change, try track B again.
+    Return (clicked: bool, element, selector).
     """
     el, sel = find_element(page, platform, key, timeout)
     if not el:
@@ -302,7 +302,7 @@ def find_and_click(page, platform, key, timeout=5):
     try:
         el.click()
     except Exception as e:
-        logger.warning(f"  ⚠️ 点击 {platform}.{key} 失败: {e}")
+        logger.warning(f"  ⚠️Click {platform}.{key} failed: {e}")
         return False, el, sel
 
     time.sleep(0.5)
@@ -320,7 +320,7 @@ def find_and_click(page, platform, key, timeout=5):
     except Exception:
         return True, el, sel
 
-    logger.info(f"  ⚠️ 点击 {platform}.{key} 后页面无变化，重试轨道 B...")
+    logger.info(f"  ⚠️ There is no change in the page after clicking {platform}.{key}, try again track B...")
     el2, sel2 = _track_b(page, platform, key)
     if el2:
         try:

@@ -1,13 +1,13 @@
-"""数据存储层 — 账号映射管理、快照存取、历史时序读取。
+"""Data storage layer - account mapping management, snapshot access, and historical timing reading.
 
-存储结构（按账号隔离）：
+Storage structure (isolated by account):
   ~/.social_uploader/analytics/
-    accounts_map.json          — 账号 → 平台开关映射（全局，仅含 true/false）
-    <account>/                 — 如 default/
-      snapshots/               — 每次采集的完整 JSON 快照
+    accounts_map.json — Account → Platform switch mapping (global, only true/false)
+    <account>/ — like default/
+      snapshots/ — A complete JSON snapshot of each collection
         {timestamp}_{platform}.json
-      history.jsonl            — 时序追加，每次采集一行摘要
-      reports/                 — 生成的报告文件
+      history.jsonl — Time series append, collecting one line of summary each time
+      reports/ — Generated report files
         {date}_report.md / .html
 """
 
@@ -43,7 +43,7 @@ def _ensure_dirs():
 
 
 def _migrate_legacy_data():
-    """首次运行时将旧版扁平目录数据迁移到 default/ 账号子目录。"""
+    """Migrate the old flat directory data to the default/account subdirectory when running for the first time."""
     target = _account_dir("default")
     migrated = False
 
@@ -69,14 +69,14 @@ def _migrate_legacy_data():
         migrated = True
 
     if migrated:
-        logger.info("  📦 已将旧版数据迁移到 default/ 账号目录")
+        logger.info("  📦 Old version data has been migrated to default/account directory")
 
 
 _migrate_legacy_data()
 
 
 # ---------------------------------------------------------------------------
-# accounts_map 管理（全局，不按账号分目录）
+# accounts_map management (global, not divided into directories by account)
 # ---------------------------------------------------------------------------
 
 def load_accounts_map() -> dict:
@@ -85,7 +85,7 @@ def load_accounts_map() -> dict:
         try:
             return json.loads(_ACCOUNTS_MAP_PATH.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as e:
-            logger.warning(f"accounts_map.json 读取失败: {e}")
+            logger.warning(f"Failed to read accounts_map.json: {e}")
     return {}
 
 
@@ -95,11 +95,11 @@ def save_accounts_map(mapping: dict):
         json.dumps(mapping, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
-    logger.info(f"  accounts_map 已保存: {_ACCOUNTS_MAP_PATH}")
+    logger.info(f"  accounts_map saved: {_ACCOUNTS_MAP_PATH}")
 
 
 def _sanitize_platforms(platforms: dict) -> dict:
-    """确保平台值只有 True/False，不含频道 ID 等标识信息。"""
+    """Make sure that the platform value is only True/False and does not contain identification information such as channel ID."""
     sanitized = {}
     for k, v in platforms.items():
         if isinstance(v, bool):
@@ -114,9 +114,9 @@ def _sanitize_platforms(platforms: dict) -> dict:
 
 
 def get_account_platforms(account: str = "default") -> dict:
-    """返回指定账号的平台映射，不存在则返回空 dict。
+    """Returns the platform mapping of the specified account. If it does not exist, an empty dict is returned.
 
-    自动将旧格式（含频道 ID 等字符串值）规范化为 true/false。
+    Automatically normalize old formats (with string values ​​such as channel IDs) to true/false.
     """
     mapping = load_accounts_map()
     raw = mapping.get(account, {})
@@ -128,21 +128,21 @@ def get_account_platforms(account: str = "default") -> dict:
 
 
 def set_account_platforms(account: str, platforms: dict):
-    """设置指定账号的平台映射。平台值只允许 true/false。"""
+    """Set the platform mapping for the specified account. Platform values ​​only allow true/false."""
     mapping = load_accounts_map()
     mapping[account] = platforms
     save_accounts_map(mapping)
 
 
 # ---------------------------------------------------------------------------
-# 快照存储（按账号隔离）
+# Snapshot storage (isolated by account)
 # ---------------------------------------------------------------------------
 
 _SNAPSHOT_RETAIN_DAYS = 90
 
 
 def save_snapshot(platform: str, data: dict, account: str = "default") -> Path:
-    """保存一次采集的完整数据快照，返回文件路径。保存后自动清理超龄快照。"""
+    """Save a complete data snapshot collected once and return the file path. Automatically clean up overaged snapshots after saving."""
     _ensure_account_dirs(account)
     ts = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     filename = f"{ts}_{platform}.json"
@@ -158,13 +158,13 @@ def save_snapshot(platform: str, data: dict, account: str = "default") -> Path:
         .decode("utf-8")
     )
     path.write_text(sanitized, encoding="utf-8")
-    logger.info(f"  快照已保存: {path.name}")
+    logger.info(f"  Snapshot saved: {path.name}")
     _cleanup_old_snapshots(account)
     return path
 
 
 def _cleanup_old_snapshots(account: str = "default"):
-    """删除超过 _SNAPSHOT_RETAIN_DAYS 天的旧快照文件。"""
+    """Delete snapshot files older than _SNAPSHOT_RETAIN_DAYS days."""
     snap_dir = _account_dir(account) / "snapshots"
     if not snap_dir.exists():
         return
@@ -181,11 +181,11 @@ def _cleanup_old_snapshots(account: str = "default"):
         except (ValueError, IndexError):
             continue
     if removed:
-        logger.info(f"  🧹 已清理 {removed} 个超过 {_SNAPSHOT_RETAIN_DAYS} 天的旧快照")
+        logger.info(f"  🧹 Cleaned {removed} old snapshots older than {_SNAPSHOT_RETAIN_DAYS} days")
 
 
 def load_latest_snapshot(platform: str, account: str = "default") -> dict | None:
-    """加载指定平台最近一次快照。"""
+    """Load the latest snapshot of the specified platform."""
     _ensure_account_dirs(account)
     snap_dir = _account_dir(account) / "snapshots"
     candidates = sorted(
@@ -198,12 +198,12 @@ def load_latest_snapshot(platform: str, account: str = "default") -> dict | None
     try:
         return json.loads(candidates[0].read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
-        logger.warning(f"快照读取失败 {candidates[0]}: {e}")
+        logger.warning(f"Snapshot read failed {candidates[0]}: {e}")
         return None
 
 
 def load_previous_snapshot(platform: str, account: str = "default") -> dict | None:
-    """加载指定平台倒数第二次快照（用于趋势对比）。"""
+    """Load the penultimate snapshot of the specified platform (for trend comparison)."""
     _ensure_account_dirs(account)
     snap_dir = _account_dir(account) / "snapshots"
     candidates = sorted(
@@ -216,12 +216,12 @@ def load_previous_snapshot(platform: str, account: str = "default") -> dict | No
     try:
         return json.loads(candidates[1].read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
-        logger.warning(f"快照读取失败 {candidates[1]}: {e}")
+        logger.warning(f"Snapshot read failed {candidates[1]}: {e}")
         return None
 
 
 def list_snapshots(platform: str | None = None, limit: int = 20, account: str = "default") -> list[dict]:
-    """列出快照摘要，可按平台过滤。"""
+    """Lists snapshot summaries, filterable by platform."""
     _ensure_account_dirs(account)
     snap_dir = _account_dir(account) / "snapshots"
     pattern = f"*_{platform}.json" if platform else "*.json"
@@ -245,11 +245,11 @@ def list_snapshots(platform: str | None = None, limit: int = 20, account: str = 
 
 
 # ---------------------------------------------------------------------------
-# 历史时序（按账号隔离）
+# Historical time series (isolated by account)
 # ---------------------------------------------------------------------------
 
 def append_history(entry: dict, account: str = "default"):
-    """向 history.jsonl 追加一行采集摘要。"""
+    """Append a line of collection summary to history.jsonl."""
     _ensure_account_dirs(account)
     entry.setdefault("ts", datetime.now().isoformat())
     history_path = _account_dir(account) / "history.jsonl"
@@ -258,7 +258,7 @@ def append_history(entry: dict, account: str = "default"):
 
 
 def load_history(limit: int = 100, account: str = "default") -> list[dict]:
-    """读取最近 N 条历史记录。"""
+    """Read the latest N history records."""
     history_path = _account_dir(account) / "history.jsonl"
     if not history_path.exists():
         return []
@@ -273,17 +273,17 @@ def load_history(limit: int = 100, account: str = "default") -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# 报告文件（按账号隔离）
+# Report files (isolated by account)
 # ---------------------------------------------------------------------------
 
 def save_report(content: str, fmt: str = "md", account: str = "default") -> Path:
-    """保存报告文件，返回路径。"""
+    """Save the report file and return the path."""
     _ensure_account_dirs(account)
     date_str = datetime.now().strftime("%Y-%m-%d")
     filename = f"{date_str}_report.{fmt}"
     path = _account_dir(account) / "reports" / filename
     path.write_text(content, encoding="utf-8")
-    logger.info(f"  报告已保存: {path}")
+    logger.info(f"  Report saved: {path}")
     return path
 
 

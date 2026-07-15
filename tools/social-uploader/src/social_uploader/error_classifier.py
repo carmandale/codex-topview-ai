@@ -1,14 +1,14 @@
-"""自动修复 - 错误分类：决定哪些错误 AI 能自己修，哪些要通知用户
+"""Automated repair - Error classification: deciding which errors the AI ​​can fix itself and which ones the user should be notified of
 
-【这个文件负责什么】
-定义所有错误类型和对应的处理方式：
-- agent_fix：AI 可以自己修（比如按钮名字变了）
-- notify_user：需要用户介入（比如没登录）
-- wait_retry：等一会儿再试（比如频率限制）
-- escalate_user：搞不定，告诉用户（未知错误）
+[What is this file responsible for]
+Define all error types and corresponding handling methods:
+- agent_fix: AI can fix it by itself (for example, the button name has changed)
+- notify_user: requires user intervention (for example, not logged in)
+- wait_retry: wait for a while and try again (such as frequency limit)
+- escalate_user: If you can’t figure it out, tell the user (unknown error)
 
-【你可能要改的地方】
-- ERROR_TYPES 字典：增删错误类型或调整处理策略
+【Things you may want to change】
+- ERROR_TYPES dictionary: add or delete error types or adjust processing strategies
 """
 
 ERROR_TYPES = {
@@ -30,10 +30,10 @@ ERROR_TYPES = {
 
 
 def classify_error(error_code):
-    """返回错误码对应的处理策略标签。"""
+    """Returns the processing policy label corresponding to the error code."""
     return ERROR_TYPES.get(error_code, "escalate_user")
 
 
 def is_agent_fixable(error_code):
-    """判断该错误类型是否可由 Agent 自主修复。"""
+    """Determine whether the error type can be repaired by the Agent autonomously."""
     return classify_error(error_code) == "agent_fix"

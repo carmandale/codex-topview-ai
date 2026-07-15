@@ -143,7 +143,7 @@ def main() -> None:
         'var btns = modal.querySelectorAll("button");'
         'for (var b of btns) {'
         '  var t = (b.textContent || "").trim().toLowerCase();'
-        '  if (t.indexOf("allow") >= 0 || t.indexOf("agree") >= 0 || t.indexOf("允许") >= 0 || t.indexOf("ok") >= 0 || t.indexOf("confirm") >= 0) {'
+        '  if (t.indexOf("allow") >= 0 || t.indexOf("agree") >= 0 || t.indexOf("allow") >= 0 || t.indexOf("ok") >= 0 || t.indexOf("confirm") >= 0) {'
         '    b.click(); return "clicked:" + t;'
         '  }'
         '}'

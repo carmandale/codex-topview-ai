@@ -1,14 +1,14 @@
-"""自动修复 - 核心模块：日志记录 + 页面快照 + 修复推荐
+"""Automatic repair - core module: logging + page snapshot + repair recommendation
 
-【这个文件负责什么】
-1. 脚本每一步执行后记录"成功/失败"日志
-2. 失败时给页面"拍快照"（提取所有按钮信息）
-3. 根据快照分析哪个按钮可能是目标，推荐修复命令
+[What is this file responsible for]
+1. Record "success/failure" log after each step of the script execution
+2. Take a snapshot of the page when it fails (extract all button information)
+3. Analyze which button may be the target based on the snapshot and recommend repair commands
 
-【你可能要改的地方】
-- STEP_KEYWORDS 字典：定义每种按钮"长什么样"（关键词匹配）
-- suggest_selectors() 函数：修复推荐的输出格式
-- _generate_selectors_for_element()：从按钮信息生成选择器的规则
+【Things you may want to change】
+- STEP_KEYWORDS dictionary: define what each button "looks like" (keyword matching)
+- suggest_selectors() function: fix recommended output format
+- _generate_selectors_for_element(): Rules for generating selectors from button information
 """
 
 import json
@@ -27,7 +27,7 @@ _LOG_DIR = Path.home() / ".social_uploader"
 
 
 def generate_run_id():
-    """生成 8 位随机 run_id。"""
+    """Generate a random 8-digit run_id."""
     chars = string.ascii_lowercase + string.digits
     return "".join(random.choices(chars, k=8))
 
@@ -37,25 +37,25 @@ def _ensure_log_dir():
 
 
 def log_step(step, status, **kwargs):
-    """输出一行 JSON 到 stderr（供 Agent 解析），同时保留 emoji 日志到 stdout。
+    """Output a line of JSON to stderr (for Agent to parse), while retaining emoji logs to stdout.
 
-    成功示例: {"step":"navigate","status":"ok","time_s":0.8}
-    失败示例: {"step":"find_element","status":"fail","error":"selector_not_found",...}
+    Success example: {"step":"navigate","status":"ok","time_s":0.8}
+    Failure example: {"step":"find_element","status":"fail","error":"selector_not_found",...}
     """
     record = {"step": step, "status": status, **kwargs}
     print(json.dumps(record, ensure_ascii=False), file=sys.stderr)
 
     if status == "ok":
-        logger.info(f"  ✅ [{step}] 完成" + (f" ({kwargs.get('detail', '')})" if kwargs.get("detail") else ""))
+        logger.info(f"  ✅ [{step}] Completed" + (f" ({kwargs.get('detail', '')})" if kwargs.get("detail") else ""))
     elif status == "fail":
         err = kwargs.get("error", "unknown")
-        logger.error(f"  ❌ [{step}] 失败 — {err}")
+        logger.error(f"  ❌ [{step}] failed — {err}")
 
 
 def log_diag_line(run_id, platform, step, error, **hints):
-    """输出 DIAG| 索引行到 stdout，供 Agent 检测触发修复。
+    """Output the DIAG| index line to stdout for Agent detection to trigger repair.
 
-    当 error=recipe_step_failed 时，额外输出 HINT| 行帮助 Agent 推理修复方案。
+    When error=recipe_step_failed, additional HINT| lines are output to help the Agent reason about repair solutions.
     """
     diag_parts = [f"DIAG|run_id={run_id}|platform={platform}|step={step}|error={error}"]
     for k, v in hints.items():
@@ -67,14 +67,14 @@ def log_diag_line(run_id, platform, step, error, **hints):
         semantic_hint = hints.get("semantic_hint", "")
         recipe_key = hints.get("recipe_key", "schedule_recipe")
         if semantic_hint:
-            print(f"HINT|该步骤目标：{semantic_hint}")
+            print(f"HINT|The target of this step: {semantic_hint}")
         if failed_step:
-            print(f"HINT|修复命令模板：social-upload fix-recipe --target {platform} --recipe {recipe_key} --step {failed_step} --selector \"新选择器\"")
-        print(f"HINT|DOM 快照已保存：~/.social_uploader/detail_{run_id}.jsonl")
+            print(f"HINT|Fix command template: social-upload fix-recipe --target {platform} --recipe {recipe_key} --step {failed_step} --selector \"new selector\"")
+        print(f"HINT|DOM snapshot saved: ~/.social_uploader/detail_{run_id}.jsonl")
 
 
 def write_summary(run_id, platform, step, error, url, **extra):
-    """追加一条到 ~/.social_uploader/summary.jsonl（< 500 字符）。"""
+    """Append to ~/.social_uploader/summary.jsonl (< 500 characters)."""
     _ensure_log_dir()
     record = {
         "run_id": run_id,
@@ -92,10 +92,10 @@ def write_summary(run_id, platform, step, error, url, **extra):
 
 
 def write_success(run_id, platform, elapsed_s=0):
-    """追加一条成功记录到 ~/.social_uploader/summary.jsonl。
+    """Append a success record to ~/.social_uploader/summary.jsonl.
 
-    与 write_summary（失败记录）共享同一文件，通过 status 字段区分。
-    使成功率统计成为可能：success_count / total_count。
+    Shares the same file as write_summary (failure record), distinguished by status field.
+    Enables success rate statistics: success_count / total_count.
     """
     _ensure_log_dir()
     record = {
@@ -111,7 +111,7 @@ def write_success(run_id, platform, elapsed_s=0):
 
 
 def write_detail(run_id, step, error, **context):
-    """写入 ~/.social_uploader/detail_{run_id}.jsonl，含 DOM snippet 等上下文。"""
+    """Write ~/.social_uploader/detail_{run_id}.jsonl, including DOM snippet and other contexts."""
     _ensure_log_dir()
     record = {"step": step, "error": error, **context}
     line = json.dumps(record, ensure_ascii=False)
@@ -119,10 +119,10 @@ def write_detail(run_id, step, error, **context):
         f.write(line + "\n")
 
 
-# ⚠️ DrissionPage.run_js 会把脚本包成 `function(){<代码>}` 执行，
-#    所以必须用顶层 return；严禁外层再裹 (function(){...})() IIFE，
-#    否则外层函数不 return，结果在 Python 端永远是 None（实测验证）。
-#    参数通过 %s / %d 模板硬编码到 JS 字面量。
+# ⚠️ DrissionPage.run_js will package the script into `function(){<代码>}` for execution.
+# Therefore, top-level return must be used; it is strictly prohibited to wrap (function(){...})() IIFE in the outer layer.
+# Otherwise, the outer function does not return, and the result is always None on the Python side (verified by actual testing).
+# Parameters are hardcoded into JS literals via %s / %d templates.
 _DOM_EXTRACT_JS = """
 var areaSelector = %s;
 var maxChars = %d;
@@ -187,10 +187,10 @@ return out;
 
 
 def get_dom_snippet(page, area_selector=None, max_chars=MAX_SNIPPET_CHARS):
-    """提取当前页面精简 DOM，返回 JSON 字符串（硬限 max_chars）。
+    """Extract the condensed DOM of the current page and return a JSON string (hard limit max_chars).
 
-    第一条是页面元信息（title/url/h1/alert），随后是诊断元素（h1-h3/alert/dialog），
-    最后是交互元素的关键属性 + textContent。
+    The first is page meta information (title/url/h1/alert), followed by diagnostic elements (h1-h3/alert/dialog),
+    Finally, there is the key attribute of the interactive element + textContent.
     """
     area_arg = f'"{area_selector}"' if area_selector else "null"
     js = _DOM_EXTRACT_JS % (area_arg, max_chars)
@@ -224,7 +224,7 @@ STEP_KEYWORDS = {
 
 
 def _generate_selectors_for_element(el):
-    """为单个 DOM 元素生成所有可能的 DrissionPage 格式选择器，按优先级排列。"""
+    """Generates all possible DrissionPage format selectors for a single DOM element, ordered by priority."""
     candidates = []
     if el.get("data-e2e"):
         candidates.append(f'@data-e2e={el["data-e2e"]}')
@@ -247,7 +247,7 @@ def _generate_selectors_for_element(el):
 
 
 def _element_matches_step(el, step):
-    """判断一个 DOM 元素是否语义上匹配某个 step 的目标。"""
+    """Determine whether a DOM element semantically matches the target of a step."""
     keywords = STEP_KEYWORDS.get(step, [])
     if not keywords:
         return False
@@ -261,41 +261,41 @@ def _element_matches_step(el, step):
 
 
 def suggest_selectors(run_id):
-    """读取 detail 文件，从 DOM 片段中提取候选选择器，输出完整 fix-selector 命令。"""
+    """Read the detail file, extract candidate selectors from the DOM fragment, and output the complete fix-selector command."""
     summary_path = _LOG_DIR / "summary.jsonl"
     if not summary_path.exists():
-        return "ERROR: summary.jsonl 不存在，没有失败记录"
+        return "ERROR: summary.jsonl does not exist and there is no failure record"
 
     last_line = summary_path.read_text(encoding="utf-8").strip().split("\n")[-1]
     try:
         summary = json.loads(last_line)
     except Exception:
-        return "ERROR: summary.jsonl 最后一行解析失败"
+        return "ERROR: Parsing the last line of summary.jsonl failed"
 
     if summary.get("run_id") != run_id:
-        return f"ERROR: run_id 不匹配 (期望 {run_id}, 实际 {summary.get('run_id')})"
+        return f"ERROR: run_id mismatch (expected {run_id}, actual {summary.get('run_id')})"
 
     platform = summary.get("platform", "unknown")
     step = summary.get("failed_at", "unknown")
     error = summary.get("error", "unknown")
-    # selectors_tried 是 report_failure 传入的按钮配置 key（如 "post_button"），
-    # 与 STEP_KEYWORDS 的 key 对应；step 是上传步骤名（如 "publish"），两者不同。
-    # 可能包含逗号分隔的多个 key（如 "file_input, select_from_computer"）。
+    # selectors_tried is the button configuration key (such as "post_button") passed in by report_failure,
+    # Corresponds to the key of STEP_KEYWORDS; step is the name of the upload step (such as "publish"), and they are different.
+    # May contain multiple keys separated by commas (such as "file_input, select_from_computer").
     raw_keys = summary.get("selectors_tried", step)
     button_keys = [k.strip().split("(")[0].strip() for k in raw_keys.split(",")]
 
     if error != "selector_not_found":
-        return f"STEP: {step}\nPLATFORM: {platform}\nERROR: {error}\nNO_FIX: 此错误类型不支持自动修复选择器，请通知用户处理"
+        return f"STEP: {step}\nPLATFORM: {platform}\nERROR: {error}\nNO_FIX: This error type does not support automatic repair of the selector, please notify the user to handle it"
 
     detail_path = _LOG_DIR / f"detail_{run_id}.jsonl"
     if not detail_path.exists():
-        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: detail 文件不存在"
+        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: detail file does not exist"
 
     last_detail = detail_path.read_text(encoding="utf-8").strip().split("\n")[-1]
     try:
         detail = json.loads(last_detail)
     except Exception:
-        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: detail 文件解析失败"
+        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: detail file parsing failed"
 
     dom_raw = detail.get("dom_snippet", "[]")
     try:
@@ -312,7 +312,7 @@ def suggest_selectors(run_id):
         elements = []
 
     if not elements:
-        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: DOM 片段为空或解析失败"
+        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: DOM fragment is empty or parsing failed"
 
     def _matches_any_key(el):
         return any(_element_matches_step(el, bk) for bk in button_keys)
@@ -321,7 +321,7 @@ def suggest_selectors(run_id):
                if _matches_any_key(el) and _generate_selectors_for_element(el)]
 
     if not matched:
-        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: DOM 中未找到匹配 \"{', '.join(button_keys)}\" 语义的元素"
+        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: No element matching the semantics \"{', '.join(button_keys)}\" was found in the DOM"
 
     primary_key = button_keys[0]
     lines = [f"STEP: {step}", f"PLATFORM: {platform}", "RUN_ONE:"]
@@ -342,39 +342,39 @@ def suggest_selectors(run_id):
 
 
 def suggest_patterns(run_id):
-    """读取 detail 文件，从 DOM 快照的 _page/_diag 条目中推荐可作为状态信号的文本。
+    """Read the detail file and recommend text that can be used as a status signal from the _page/_diag entries of the DOM snapshot.
 
-    用于 state_mismatch 错误时，帮助 agent 找到新的状态检测文案。
+    Used for state_mismatch errors to help the agent find new state detection copy.
     """
     summary_path = _LOG_DIR / "summary.jsonl"
     if not summary_path.exists():
-        return "ERROR: summary.jsonl 不存在，没有失败记录"
+        return "ERROR: summary.jsonl does not exist and there is no failure record"
 
     last_line = summary_path.read_text(encoding="utf-8").strip().split("\n")[-1]
     try:
         summary = json.loads(last_line)
     except Exception:
-        return "ERROR: summary.jsonl 最后一行解析失败"
+        return "ERROR: Parsing the last line of summary.jsonl failed"
 
     if summary.get("run_id") != run_id:
-        return f"ERROR: run_id 不匹配 (期望 {run_id}, 实际 {summary.get('run_id')})"
+        return f"ERROR: run_id mismatch (expected {run_id}, actual {summary.get('run_id')})"
 
     platform = summary.get("platform", "unknown")
     step = summary.get("failed_at", "unknown")
     error = summary.get("error", "unknown")
 
     if error not in ("state_mismatch", "timeout"):
-        return f"STEP: {step}\nPLATFORM: {platform}\nERROR: {error}\nNO_FIX: 此错误类型不适用 fix-pattern，请用 suggest-selectors 或通知用户"
+        return f"STEP: {step}\nPLATFORM: {platform}\nERROR: {error}\nNO_FIX: This error type does not apply to fix-pattern, please use suggest-selectors or notify the user"
 
     detail_path = _LOG_DIR / f"detail_{run_id}.jsonl"
     if not detail_path.exists():
-        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: detail 文件不存在"
+        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: detail file does not exist"
 
     last_detail = detail_path.read_text(encoding="utf-8").strip().split("\n")[-1]
     try:
         detail = json.loads(last_detail)
     except Exception:
-        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: detail 文件解析失败"
+        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: detail file parsing failed"
 
     dom_raw = detail.get("dom_snippet", "[]")
     try:
@@ -391,7 +391,7 @@ def suggest_patterns(run_id):
         elements = []
 
     if not elements:
-        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: DOM 片段为空或解析失败"
+        return f"STEP: {step}\nPLATFORM: {platform}\nNO_CANDIDATES: DOM fragment is empty or parsing failed"
 
     lines = [f"STEP: {step}", f"PLATFORM: {platform}", f"ERROR: {error}", ""]
 
@@ -449,13 +449,13 @@ def suggest_patterns(run_id):
         lines.append("")
         lines.append("NOTE: 请根据页面语义选择合适的信号类型（success_signals / error_signals / ready_signals 等）")
     else:
-        lines.append("NO_CANDIDATES: DOM 中未找到可用作状态信号的文本")
+        lines.append("NO_CANDIDATES: No text found in the DOM that could be used as a status signal")
 
     return "\n".join(lines)
 
 
 def safe_page_url(page, default="page_disconnected"):
-    """安全获取 page.url，避免 PageDisconnectedError 导致调用方崩溃。"""
+    """Get page.url safely and avoid PageDisconnectedError causing the caller to crash."""
     try:
         return page.url or default
     except Exception:
@@ -463,22 +463,22 @@ def safe_page_url(page, default="page_disconnected"):
 
 
 def report_failure(page, run_id, platform, step, error, url, **extra):
-    """一站式失败报告：写 summary + detail + 输出 DIAG 行。
+    """One-stop failure reporting: write summary + detail + output DIAG line.
 
-    自动提取 DOM snippet 以便事后诊断。
-    使用 error_classifier 标注该错误是否可自动修复。
+    Automatically extract DOM snippets for post-mortem diagnosis.
+    Use error_classifier to mark whether the error can be automatically repaired.
     """
     from social_uploader.error_classifier import classify_error
 
     strategy = classify_error(error)
     if strategy == "agent_fix":
-        logger.info(f"  🔧 错误类型 [{error}] 可自动修复")
+        logger.info(f"  🔧 Error type [{error}] can be automatically repaired")
     elif strategy == "notify_user":
-        logger.warning(f"  👤 错误类型 [{error}] 需要用户介入")
+        logger.warning(f"  👤 Error type [{error}] requires user intervention")
     elif strategy == "wait_retry":
-        logger.info(f"  ⏳ 错误类型 [{error}] 建议等待后重试")
+        logger.info(f"  ⏳ Error type [{error}] It is recommended to wait and try again")
     else:
-        logger.warning(f"  ⚠️ 错误类型 [{error}] 需要人工判断")
+        logger.warning(f"  ⚠️ Error type [{error}] requires manual judgment")
 
     dom_snippet = None
     try:

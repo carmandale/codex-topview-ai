@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>社交媒体数据简报</title>
+<title>Social media data briefing</title>
 <style>
   :root { --bg: #f8f9fa; --card: #fff; --text: #212529; --muted: #6c757d; --accent: #0d6efd; --success: #198754; --danger: #dc3545; --border: #dee2e6; --warn-bg: #fff3cd; --success-bg: #d1e7dd; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -41,12 +41,12 @@
 </head>
 <body>
 
-<h1>社交媒体数据简报</h1>
-<p class="meta">生成时间: {{ generated_at }} &nbsp;|&nbsp; 分析周期: 最近 {{ period_days }} 天</p>
+<h1>Social media data briefing</h1>
+<p class="meta">Generation time: {{ generated_at }} &nbsp;|&nbsp; Analysis cycle: recent {{ period_days }} sky</p>
 
 {% if highlights or warnings %}
 <div class="card" style="border-left: 4px solid {% if highlights %}var(--success){% else %}var(--danger){% endif %}">
-  <h3 style="margin-top:0">关键发现</h3>
+  <h3 style="margin-top:0">Key findings</h3>
   {% for h in highlights[:3] %}
   <div class="highlight">✅ {{ h }}</div>
   {% endfor %}
@@ -56,13 +56,13 @@
 </div>
 {% endif %}
 
-<h2>一、数据总览</h2>
+<h2>1. Data Overview</h2>
 
 {% for platform, data in platforms.items() %}
 <div class="card">
   <h3>{{ platform | upper }}</h3>
   <table>
-    <thead><tr><th>指标</th><th>当前值</th><th>变化</th></tr></thead>
+    <thead><tr><th>index</th><th>current value</th><th>change</th></tr></thead>
     <tbody>
     {% for metric, info in data.trend.items() %}
     <tr>
@@ -74,7 +74,7 @@
     </tbody>
   </table>
   {% if data.engagement_rate is not none %}
-  <p><strong>互动率:</strong> {{ data.engagement_rate }}%</p>
+  <p><strong>interaction rate:</strong> {{ data.engagement_rate }}%</p>
   {% endif %}
 </div>
 {% endfor %}
@@ -82,10 +82,10 @@
 {% set cross = build_cross_platform_summary(platforms) %}
 {% if cross %}
 <div class="card">
-  <h3>跨平台对比</h3>
+  <h3>Cross-platform comparison</h3>
   <table>
     <thead>
-      <tr><th>指标</th>{% for p in platforms %}<th style="text-align:right">{{ p | upper }}</th>{% endfor %}</tr>
+      <tr><th>index</th>{% for p in platforms %}<th style="text-align:right">{{ p | upper }}</th>{% endfor %}</tr>
     </thead>
     <tbody>
     {% for row in cross %}
@@ -103,39 +103,39 @@
 
 {% if publish_cadence.total_uploads > 0 %}
 <div class="card">
-  <h3>发布节奏</h3>
+  <h3>release cadence</h3>
   <table>
     <tbody>
-      <tr><td>周期内上传次数</td><td class="num">{{ publish_cadence.total_uploads }}</td></tr>
-      <tr><td>成功 / 失败</td><td class="num">{{ publish_cadence.successful_uploads }} / {{ publish_cadence.failed_uploads }}</td></tr>
+      <tr><td>Number of uploads in the cycle</td><td class="num">{{ publish_cadence.total_uploads }}</td></tr>
+      <tr><td>success / fail</td><td class="num">{{ publish_cadence.successful_uploads }} / {{ publish_cadence.failed_uploads }}</td></tr>
       {% if publish_cadence.avg_interval_days %}
-      <tr><td>平均发布间隔</td><td class="num">{{ publish_cadence.avg_interval_days }} 天</td></tr>
+      <tr><td>average release interval</td><td class="num">{{ publish_cadence.avg_interval_days }} sky</td></tr>
       {% endif %}
       {% for p, count in publish_cadence.by_platform.items() %}
-      <tr><td>{{ p }} 上传次数</td><td class="num">{{ count }}</td></tr>
+      <tr><td>{{ p }} Upload times</td><td class="num">{{ count }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% endif %}
 
-<h2>二、内容表现</h2>
+<h2>2. Content performance</h2>
 
 {% for platform, data in platforms.items() %}
 {% if data.videos.ranked %}
 {% set cols = detect_video_columns(data.videos.ranked) %}
 {% set display_cols = cols[:6] %}
 <div class="card">
-  <h3>{{ platform | upper }} 视频详情 (共 {{ data.videos.count }} 条)</h3>
+  <h3>{{ platform | upper }} Video details (common {{ data.videos.count }} strip)</h3>
   <table class="video-table">
     <thead>
       <tr>
         <th>#</th>
-        <th>标题</th>
+        <th>title</th>
         {% for c in display_cols %}
         <th style="text-align:right">{{ video_metric_label(c) }}</th>
         {% endfor %}
-        <th>标记</th>
+        <th>mark</th>
       </tr>
     </thead>
     <tbody>
@@ -147,42 +147,42 @@
       <td class="num">{{ v.get(c) | format_number }}</td>
       {% endfor %}
       <td>
-        {% if v in data.videos.hits %}<span class="badge badge-hit">🔥 爆款</span>{% endif %}
-        {% if v in data.videos.flops %}<span class="badge badge-flop">⚠️ 低迷</span>{% endif %}
+        {% if v in data.videos.hits %}<span class="badge badge-hit">🔥 Hot style</span>{% endif %}
+        {% if v in data.videos.flops %}<span class="badge badge-flop">⚠️ downturn</span>{% endif %}
       </td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
   {% if data.videos.mean_views is defined %}
-  <p class="stat-note">平均播放量: {{ data.videos.mean_views | format_number }} &nbsp;|&nbsp; 爆款阈值: &gt; 均值 {{ hit_threshold }}x &nbsp;|&nbsp; 低迷阈值: &lt; 均值 {{ flop_threshold }}x</p>
+  <p class="stat-note">Average views: {{ data.videos.mean_views | format_number }} &nbsp;|&nbsp; Hot item threshold: &gt; mean {{ hit_threshold }}x &nbsp;|&nbsp; downturn threshold: &lt; mean {{ flop_threshold }}x</p>
   {% endif %}
 </div>
 {% endif %}
 {% endfor %}
 
 {% if highlights %}
-<h3>亮点</h3>
+<h3>Highlights</h3>
 {% for h in highlights %}
 <div class="highlight">✅ {{ h }}</div>
 {% endfor %}
 {% endif %}
 
 {% if warnings %}
-<h3>预警</h3>
+<h3>early warning</h3>
 {% for w in warnings %}
 <div class="warning">⚠️ {{ w }}</div>
 {% endfor %}
 {% endif %}
 
-<h2>三、下一步创作建议</h2>
+<h2>3. Suggestions for next step creation</h2>
 
 {% if advice.summary %}
 <blockquote>{{ advice.summary }}</blockquote>
 {% endif %}
 
 {% if advice.recommended_topics %}
-<h3>推荐主题</h3>
+<h3>Recommended topics</h3>
 <ol>
 {% for topic in advice.recommended_topics %}
   <li class="advice-item">{{ topic }}</li>
@@ -191,12 +191,12 @@
 {% endif %}
 
 {% if advice.content_format %}
-<h3>内容形式</h3>
+<h3>Content form</h3>
 <div class="advice-item">{{ advice.content_format }}</div>
 {% endif %}
 
 {% if advice.title_hooks %}
-<h3>标题参考</h3>
+<h3>Title reference</h3>
 <ul>
 {% for hook in advice.title_hooks %}
   <li>{{ hook }}</li>
@@ -205,12 +205,12 @@
 {% endif %}
 
 {% if advice.publish_schedule %}
-<h3>发布节奏</h3>
+<h3>release cadence</h3>
 <div class="advice-item">{{ advice.publish_schedule }}</div>
 {% endif %}
 
 {% if advice.improvements %}
-<h3>改进方向</h3>
+<h3>Directions for improvement</h3>
 <ul>
 {% for item in advice.improvements %}
   <li>{{ item }}</li>
@@ -219,7 +219,7 @@
 {% endif %}
 
 <div class="footer">
-  报告由 social-upload monitor 自动生成 &nbsp;|&nbsp; 建议来源: {{ advice.source | default("rules") }}
+  Reported by social-upload monitor Automatically generated &nbsp;|&nbsp; Suggested sources: {{ advice.source | default("rules") }}
 </div>
 
 </body>

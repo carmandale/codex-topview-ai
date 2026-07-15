@@ -1,0 +1,23 @@
+# Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Local credentials and environment files
+.env
+.env.*
+*.credentials.json
+
+# Runtime output and diagnostics
+results/
+reports/
+logs/
+debug-social-upload.log
+*.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

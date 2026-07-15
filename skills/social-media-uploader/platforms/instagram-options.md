@@ -1,50 +1,50 @@
-# Instagram 上传配置项
+# Instagram upload configuration items
 
-AI 读取本文件后，根据"已实现"部分向用户收集信息。
+After AI reads this file, it collects information from the user according to the "Implemented" section.
 
-## CLI 必填参数（必须收集）
+## CLI required parameters (must be collected)
 
-| 参数 | 说明 | 收集方式 | 限制 |
+| Parameters | Description | Collection method | Limitations |
 |------|------|---------|------|
-| `--video` | 视频文件路径 | 对话问 | mp4/mov/avi/mkv/webm/flv/wmv/3gp |
-| `--caption` | 发布文案 | 对话问，用户没给则从文件名提取 | ≤2200 字符 |
+| `--video` | Video file path | Dialogue question | mp4/mov/avi/mkv/webm/flv/wmv/3gp |
+| `--caption` | Publish copy | If the dialogue asks, if the user does not give it, it will be extracted from the file name | ≤2200 characters |
 
-注意：Instagram 没有单独的 `--title` 和 `--description`，只有 `--caption`。
-如果用户提供了 title 和 description，AI 应拼接为 `title + "\n\n" + description` 作为 caption。
+Note: Instagram does not have separate `--title` and `--description`, only `--caption`.
+If the user provides title and description, AI should be spliced ​​into `title + "\n\n" + description` as caption.
 
-## 已实现的 profile 配置项（可以问用户）
+## Implemented profile configuration items (you can ask the user)
 
-### 同步到动态流 `instagram.share_to_feed`
+### Sync to dynamic stream `instagram.share_to_feed`
 
-- **收集方式**：AskQuestion（仅用户主动提及时）
-- **默认值**：`true`（同步到动态流）
-- **用户没提就用默认，不主动问**
+- **Collection method**: AskQuestion (only when the user actively mentions it)
+- **Default**: `true` (sync to dynamic stream)
+- **Use the default if the user doesn't mention it, don't ask proactively**
 
-AskQuestion 模板：
+AskQuestion template:
 ```json
 {
   "id": "instagram_share_to_feed",
-  "prompt": "是否同步到动态流？",
+  "prompt": "Synchronize to dynamic stream?",
   "options": [
-    { "id": "yes", "label": "是（默认）" },
-    { "id": "no", "label": "否，仅作为 Reel 发布" }
+    { "id": "yes", "label": "Yes (default)" },
+    { "id": "no", "label": "No, published as Reel only" }
   ]
 }
 ```
 
-映射：`yes` → `"share_to_feed": true`，`no` → `"share_to_feed": false`
+Mapping: `yes` → `"share_to_feed": true`, `no` → `"share_to_feed": false`
 
-## CLI 可选参数
+## CLI optional parameters
 
-| 参数 | 说明 |
+| Parameters | Description |
 |------|------|
-| `--no-publish` | 仅填表单不发布 |
-| `--resume-from` | 从断点恢复 |
-| `--profile` | 配置文件路径 |
+| `--no-publish` | Just fill in the form without posting |
+| `--resume-from` | Resume from breakpoint |
+| `--profile` | Configuration file path |
 
-## 生成的 profile JSON 示例
+## Generated profile JSON example
 
-用户说"上传到 Instagram，不同步到动态"时生成：
+Generated when the user says "Upload to Instagram, not synced to feed":
 ```json
 {
   "instagram": {
@@ -53,12 +53,12 @@ AskQuestion 模板：
 }
 ```
 
-用户什么都没说（全用默认）时：不传 `--profile`，代码自动用 default.json。
+When the user says nothing (all defaults are used): do not pass `--profile`, and the code automatically uses default.json.
 
-## 不支持的功能
+## Unsupported features
 
-- `schedule` — **定时发布：Instagram 网页版不支持定时发布功能。** 如果用户要求 Instagram 定时发布，应明确告知"Instagram 网页版不支持定时发布，视频将立即发布"。此为平台限制，非本工具问题。
+- `schedule` — **Scheduled posting: Instagram web version does not support scheduled posting function. ** If the user requests scheduled posting on Instagram, they should be clearly informed that "the web version of Instagram does not support scheduled posting, and the video will be posted immediately." This is a platform limitation, not a problem with this tool.
 
-## 规划中（代码暂未实现，不要问用户）
+## Under planning (the code has not been implemented yet, don’t ask users)
 
-- `location` — 地理位置标记
+- `location` — geolocation tag

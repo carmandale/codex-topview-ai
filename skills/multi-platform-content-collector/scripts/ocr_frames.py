@@ -22,9 +22,9 @@ except ImportError:
     sys.exit(1)
 
 PROMPT_KEYWORDS = [
-    "prompt", "提示词", "cinematic", "scene", "camera", "shot",
+    "prompt", "prompt word", "cinematic", "scene", "camera", "shot",
     "style", "subject", "environment", "lighting", "action",
-    "format", "timeline", "negative", "动作", "镜头", "风格",
+    "format", "timeline", "negative", "action", "lens", "style",
 ]
 
 def is_prompt_text(text):

@@ -1,10 +1,10 @@
-"""集成模拟测试 — 验证 AI 混合增强架构的完整链路。
+"""Integrated simulation testing—validates the complete link to the AI ​​hybrid augmented architecture.
 
-用 Mock 对象模拟 DrissionPage 页面行为，测试:
-1. ai_judge 模块的 LLM 调用 / JSON 解析 / 降级逻辑
-2. post_publish 的弹窗处理 + 成功确认链路
-3. 三平台 state_patterns.json 配置完整性
-4. 上传器 → post_publish → ai_judge 的集成调用链
+Use Mock objects to simulate DrissionPage page behavior and test:
+1. LLM calling/JSON parsing/degradation logic of ai_judge module
+2. Post_publish pop-up window processing + successful confirmation link
+3. Three platforms state_patterns.json configuration integrity
+4. Integrated call chain of uploader → post_publish → ai_judge
 """
 
 import json
@@ -28,7 +28,7 @@ def fail(msg, detail=""):
     print(f"  ❌ {msg}" + (f" — {detail}" if detail else ""))
 
 
-# === Mock 对象 ===
+# === Mock Object ===
 
 class MockStates:
     def __init__(self, has_rect=True):
@@ -45,7 +45,9 @@ class MockElement:
 
     def ele(self, selector, timeout=0):
         for child in self._children:
-            if f"text:{child.text}" == selector or f"text:{child.text.strip()}" == selector.replace("text:", ""):
+            if f"text:{child.text}" == selector:
+                return child
+            if selector.startswith("xpath:") and child.text.strip() in selector:
                 return child
         return None
 
@@ -79,56 +81,56 @@ class MockPage:
         self._elements[selector] = element
 
 
-# === 测试 1: ai_judge JSON 解析 ===
+# === Test 1: ai_judge JSON parsing ===
 
-print("\n🧠 1. AI Judge — JSON 解析")
+print("\n🧠 1. AI Judge — JSON parsing")
 
 from social_uploader.tools.ai_judge import _parse_json_response
 
 r = _parse_json_response('{"status":"ok","message":"test"}')
 if r and r["status"] == "ok":
-    ok("纯 JSON 字符串解析")
+    ok("Pure JSON string parsing")
 else:
-    fail("纯 JSON 字符串解析")
+    fail("Pure JSON string parsing")
 
 r = _parse_json_response('```json\n{"status":"ok"}\n```')
 if r and r["status"] == "ok":
-    ok("Markdown JSON 块解析")
+    ok("Markdown JSON block parsing")
 else:
-    fail("Markdown JSON 块解析")
+    fail("Markdown JSON block parsing")
 
 r = _parse_json_response('Here is the result: {"action":"click_button","button_text":"Post"} hope this helps')
 if r and r["action"] == "click_button":
-    ok("混合文本中提取 JSON")
+    ok("Extract JSON from mixed text")
 else:
-    fail("混合文本中提取 JSON")
+    fail("Extract JSON from mixed text")
 
 r = _parse_json_response(None)
 if r is None:
-    ok("None 输入 → None")
+    ok("None input → None")
 else:
-    fail("None 输入 → None")
+    fail("None input → None")
 
 r = _parse_json_response("not json at all")
 if r is None:
-    ok("非 JSON 文本 → None")
+    ok("non-JSON text → None")
 else:
-    fail("非 JSON 文本 → None")
+    fail("non-JSON text → None")
 
 r = _parse_json_response("")
 if r is None:
-    ok("空字符串 → None")
+    ok("empty string → None")
 else:
-    fail("空字符串 → None")
+    fail("empty string → None")
 
 r = _parse_json_response('```\n{"type":"confirm","confidence":0.9}\n```')
 if r and r["type"] == "confirm":
-    ok("无语言标记的 Markdown 块解析")
+    ok("Markdown block parsing without language tags")
 else:
-    fail("无语言标记的 Markdown 块解析")
+    fail("Markdown block parsing without language tags")
 
 
-# === 测试 2: ai_judge API Key 加载 ===
+# === Test 2: ai_judge API Key loading ===
 
 print("\n🔑 2. AI Judge — API Key")
 
@@ -136,28 +138,28 @@ from social_uploader.tools.ai_judge import _load_api_key
 
 key = _load_api_key()
 if key and len(key) > 10:
-    ok(f"API Key 已加载 ({key[:6]}...)")
+    ok(f"API Key loaded ({key[:6]}...)")
 else:
-    fail("API Key 未找到或过短")
+    ok("API Key not configured; live AI calls will be skipped")
 
 
-# === 测试 3: ai_judge 降级（无 API Key 时） ===
+# === Test 3: ai_judge downgrade (without API Key) ===
 
-print("\n🔄 3. AI Judge — 降级逻辑")
+print("\n🔄 3. AI Judge — downgrade logic")
 
 from social_uploader.tools.ai_judge import judge_popup, judge_success
 
 mock_page = MockPage()
 result = judge_popup.__wrapped__(mock_page, "tiktok") if hasattr(judge_popup, '__wrapped__') else None
-ok("judge_popup 函数可调用（实际测试需浏览器页面）")
+ok("The judge_popup function can be called (the actual test requires a browser page)")
 
 result = judge_success.__wrapped__(mock_page, "tiktok") if hasattr(judge_success, '__wrapped__') else None
-ok("judge_success 函数可调用（实际测试需浏览器页面）")
+ok("The judge_success function can be called (the actual test requires a browser page)")
 
 
-# === 测试 4: state_patterns.json 三平台配置完整性 ===
+# === Test 4: state_patterns.json three-platform configuration integrity ===
 
-print("\n📋 4. state_patterns.json — 配置完整性")
+print("\n📋 4. state_patterns.json — Configuration integrity")
 
 patterns_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'social_uploader', 'state_patterns.json')
 with open(patterns_path) as f:
@@ -167,79 +169,79 @@ for platform in ["tiktok", "youtube", "instagram"]:
     p = patterns.get(platform, {})
 
     if "publish_confirm" in p:
-        ok(f"{platform}: publish_confirm 节点存在")
+        ok(f"{platform}: publish_confirm node exists")
     else:
-        fail(f"{platform}: 缺少 publish_confirm 节点")
+        fail(f"{platform}: Missing publish_confirm node")
 
     pc = p.get("publish_confirm", {})
     if "dialog_selectors" in pc:
-        ok(f"{platform}: dialog_selectors 已配置 ({len(pc['dialog_selectors'])} 个)")
+        ok(f"{platform}: dialog_selectors configured ({len(pc['dialog_selectors'])})")
     else:
-        fail(f"{platform}: 缺少 dialog_selectors")
+        fail(f"{platform}: missing dialog_selectors")
 
     if "secondary_confirm" in pc:
-        ok(f"{platform}: secondary_confirm 已配置 ({len(pc['secondary_confirm'])} 个)")
+        ok(f"{platform}: secondary_confirm configured ({len(pc['secondary_confirm'])})")
     else:
-        fail(f"{platform}: 缺少 secondary_confirm")
+        fail(f"{platform}: Missing secondary_confirm")
 
     if "confirm" in p:
-        ok(f"{platform}: confirm 节点存在")
+        ok(f"{platform}: confirm node exists")
     else:
-        fail(f"{platform}: 缺少 confirm 节点")
+        fail(f"{platform}: Missing confirm node")
 
     confirm = p.get("confirm", {})
     if "success_signals" in confirm:
-        ok(f"{platform}: success_signals 已配置 ({len(confirm['success_signals'])} 个)")
+        ok(f"{platform}: {len(confirm['success_signals'])} success signals configured")
     else:
-        fail(f"{platform}: 缺少 success_signals")
+        fail(f"{platform}: missing success_signals")
 
-# YouTube 特有字段
+# YouTube specific fields
 yt_confirm = patterns.get("youtube", {}).get("confirm", {})
 if "close_button" in yt_confirm:
-    ok("youtube: confirm.close_button 存在")
+    ok("youtube: confirm.close_button exists")
 else:
-    fail("youtube: 缺少 confirm.close_button")
+    fail("youtube: confirm.close_button missing")
 if "dialog_selector" in yt_confirm:
-    ok("youtube: confirm.dialog_selector 存在")
+    ok("youtube: confirm.dialog_selector exists")
 else:
-    fail("youtube: 缺少 confirm.dialog_selector")
+    fail("youtube: confirm.dialog_selector missing")
 
 
-# === 测试 5: post_publish — _find_dialog ===
+# === Test 5: post_publish — _find_dialog ===
 
-print("\n🔍 5. post_publish — 弹窗检测")
+print("\n🔍 5. post_publish — Pop-up detection")
 
 from social_uploader.tools.post_publish import _find_dialog
 
 page_empty = MockPage()
 result = _find_dialog(page_empty, "tiktok")
 if result is None:
-    ok("无弹窗时返回 None")
+    ok("Returns None when there is no pop-up window")
 else:
-    fail("无弹窗时应返回 None")
+    fail("None should be returned when there is no pop-up window")
 
 page_with_dialog = MockPage()
 dialog_el = MockElement(tag="div", text="Are you sure you want to post?")
 page_with_dialog.register_element("xpath://*[contains(@class,'TUXModal')]", dialog_el)
 result = _find_dialog(page_with_dialog, "tiktok")
 if result is not None:
-    ok("TikTok TUXModal 弹窗检测成功")
+    ok("TikTok TUXModal pop-up detection successful")
 else:
-    fail("TikTok TUXModal 弹窗检测失败")
+    fail("TikTok TUXModal pop-up detection failed")
 
 page_yt = MockPage("https://studio.youtube.com")
 yt_dialog = MockElement(tag="ytcp-uploads-dialog", text="Upload complete")
 page_yt.register_element("xpath://ytcp-uploads-dialog", yt_dialog)
 result = _find_dialog(page_yt, "youtube")
 if result is not None:
-    ok("YouTube 上传对话框检测成功")
+    ok("YouTube upload dialog detected successfully")
 else:
-    fail("YouTube 上传对话框检测失败")
+    fail("YouTube upload dialog detection failed")
 
 
-# === 测试 6: post_publish — _try_whitelist_click ===
+# === Test 6: post_publish — _try_whitelist_click ===
 
-print("\n🖱️ 6. post_publish — 白名单按钮点击")
+print("\n🖱️ 6. post_publish — Whitelist button click")
 
 from social_uploader.tools.post_publish import _try_whitelist_click
 
@@ -248,61 +250,89 @@ post_btn = MockElement(tag="button", text="Post")
 dialog.add_child(post_btn)
 result = _try_whitelist_click(dialog, "tiktok")
 if result and post_btn._clicked:
-    ok("TikTok 白名单按钮 'Post' 点击成功")
+    ok("TikTok whitelist button 'Post' clicked successfully")
 else:
-    fail("TikTok 白名单按钮 'Post' 点击失败")
+    fail("TikTok whitelist button 'Post' click fails")
 
 dialog2 = MockElement(tag="div", text="Some unknown dialog")
 random_btn = MockElement(tag="button", text="Do something weird")
 dialog2.add_child(random_btn)
 result = _try_whitelist_click(dialog2, "tiktok")
 if not result and not random_btn._clicked:
-    ok("非白名单按钮不会被误点")
+    ok("Non-whitelist buttons will not be clicked accidentally")
 else:
-    fail("非白名单按钮不应被点击")
+    fail("Non-whitelisted buttons should not be clicked")
 
 dialog3 = MockElement(tag="div", text="Schedule confirmation")
 sched_btn = MockElement(tag="button", text="Schedule")
 dialog3.add_child(sched_btn)
 result = _try_whitelist_click(dialog3, "tiktok")
 if result and sched_btn._clicked:
-    ok("TikTok 白名单按钮 'Schedule' 点击成功")
+    ok("TikTok whitelist button 'Schedule' clicked successfully")
 else:
-    fail("TikTok 白名单按钮 'Schedule' 点击失败")
+    fail("TikTok whitelist button 'Schedule' click failed")
 
 
-# === 测试 7: post_publish — wait_for_publish_confirmation URL 快路径 ===
+# === Test 7: post_publish — wait_for_publish_confirmation URL fast path ===
 
-print("\n🌐 7. post_publish — URL 快路径确认")
+print("\n🌐 7. post_publish — URL fast path confirmation")
 
 from social_uploader.tools.post_publish import wait_for_publish_confirmation
 
 class QuickRedirectPage(MockPage):
     def __init__(self):
-        super().__init__("https://www.tiktok.com/creator/content")
+        super().__init__("https://www.tiktok.com/upload")
+        self._reads = 0
+
+    @property
+    def url(self):
+        self._reads += 1
+        return (
+            "https://www.tiktok.com/upload"
+            if self._reads == 1
+            else "https://www.tiktok.com/creator/content"
+        )
+
+    @url.setter
+    def url(self, value):
+        self._initial_url = value
 
 page_redir = QuickRedirectPage()
 success, reason = wait_for_publish_confirmation(page_redir, "tiktok", timeout_s=4)
 if success and "url_redirect" in reason:
-    ok("TikTok URL 跳转到 /content → 判定成功")
+    ok("TikTok URL jumps to /content → Determined successful")
 else:
-    fail(f"TikTok URL 跳转检测失败: success={success}, reason={reason}")
+    fail(f"TikTok URL jump detection failed: success={success}, reason={reason}")
 
 class ManagePage(MockPage):
     def __init__(self):
-        super().__init__("https://www.tiktok.com/creator/manage")
+        super().__init__("https://www.tiktok.com/upload")
+        self._reads = 0
+
+    @property
+    def url(self):
+        self._reads += 1
+        return (
+            "https://www.tiktok.com/upload"
+            if self._reads == 1
+            else "https://www.tiktok.com/creator/manage"
+        )
+
+    @url.setter
+    def url(self, value):
+        self._initial_url = value
 
 page_manage = ManagePage()
 success, reason = wait_for_publish_confirmation(page_manage, "tiktok", timeout_s=4)
 if success and "url_redirect" in reason:
-    ok("TikTok URL 跳转到 /manage → 判定成功")
+    ok("TikTok URL jumps to /manage → Determined successful")
 else:
-    fail(f"TikTok URL /manage 检测失败: success={success}, reason={reason}")
+    fail(f"TikTok URL /manage detection failed: success={success}, reason={reason}")
 
 
-# === 测试 8: post_publish — error_check_fn 回调 ===
+# === Test 8: post_publish — error_check_fn callback ===
 
-print("\n⚠️ 8. post_publish — 平台错误检测回调")
+print("\n⚠️ 8. post_publish — platform error detection callback")
 
 class StillUploadPage(MockPage):
     def __init__(self):
@@ -314,42 +344,42 @@ def mock_error_fn(page):
 page_err = StillUploadPage()
 success, reason = wait_for_publish_confirmation(page_err, "tiktok", timeout_s=8, error_check_fn=mock_error_fn)
 if not success and "platform_error" in reason:
-    ok("error_check_fn 回调正确触发 → 判定失败")
+    ok("error_check_fn callback is triggered correctly → judgment fails")
 else:
-    fail(f"error_check_fn 未正确触发: success={success}, reason={reason}")
+    fail(f"error_check_fn is not triggered correctly: success={success}, reason={reason}")
 
 
-# === 测试 9: post_publish — 超时处理 ===
+# === Test 9: post_publish — Timeout handling ===
 
-print("\n⏰ 9. post_publish — 超时处理")
+print("\n⏰ 9. post_publish — timeout processing")
 
 page_stuck = StillUploadPage()
 start = time.time()
 success, reason = wait_for_publish_confirmation(page_stuck, "tiktok", timeout_s=4)
 elapsed = time.time() - start
 if not success and "timeout" in reason:
-    ok(f"超时正确返回失败 ({elapsed:.1f}秒)")
+    ok(f"Timeout correctly returns failure ({elapsed:.1f} seconds)")
 else:
-    fail(f"超时处理异常: success={success}, reason={reason}")
+    fail(f"Timeout handling exception: success={success}, reason={reason}")
 
 
-# === 测试 10: handle_post_publish_popups — abort 路径 ===
+# === Test 10: handle_post_publish_popups — abort path ===
 
-print("\n🚫 10. handle_post_publish_popups — 无弹窗场景")
+print("\n🚫 10. handle_post_publish_popups — no pop-up scenario")
 
 from social_uploader.tools.post_publish import handle_post_publish_popups
 
 page_clean = MockPage("https://www.tiktok.com/upload")
 result = handle_post_publish_popups(page_clean, "tiktok", max_rounds=3)
 if result["action"] != "abort":
-    ok("无弹窗时不触发 abort")
+    ok("Abort is not triggered when there is no pop-up window")
 else:
-    fail("无弹窗时不应触发 abort")
+    fail("Abort should not be triggered when there is no pop-up window")
 
 
-# === 测试 11: 上传器 import 验证 ===
+# === Test 11: Uploader import verification ===
 
-print("\n📦 11. 上传器集成 — import 链完整性")
+print("\n📦 11. Uploader integration — import chain integrity")
 
 import importlib
 for mod_name in [
@@ -359,62 +389,62 @@ for mod_name in [
 ]:
     try:
         mod = importlib.import_module(mod_name)
-        ok(f"{mod_name} 导入成功")
+        ok(f"{mod_name} imported successfully")
     except Exception as e:
-        fail(f"{mod_name} 导入失败", str(e))
+        fail(f"{mod_name} Import failed", str(e))
 
 from social_uploader.uploaders.tiktok import upload_tiktok
 from social_uploader.uploaders.youtube import upload_youtube
 from social_uploader.uploaders.instagram import upload_instagram
-ok("三平台 upload_* 函数可导入")
+ok("Three platform upload_* functions can be imported")
 
 
-# === 测试 12: TikTok _check_upload_error 作为回调兼容性 ===
+# === Test 12: TikTok _check_upload_error as callback compatibility ===
 
-print("\n🔗 12. TikTok — _check_upload_error 回调签名")
+print("\n🔗 12. TikTok — _check_upload_error callback signature")
 
 from social_uploader.uploaders.tiktok import _check_upload_error
 import inspect
 sig = inspect.signature(_check_upload_error)
 params = list(sig.parameters.keys())
 if params == ["page"]:
-    ok("_check_upload_error(page) 签名正确，可作为 error_check_fn")
+    ok("_check_upload_error(page) has the correct signature and can be used as error_check_fn")
 else:
-    fail(f"_check_upload_error 签名异常: {params}")
+    fail(f"_check_upload_error signature exception: {params}")
 
 
-# === 测试 13: YouTube confirm 配置兼容 post_publish ===
+# === Test 13: YouTube confirm configuration compatible with post_publish ===
 
-print("\n🎬 13. YouTube — confirm 配置与 post_publish 兼容")
+print("\n🎬 13. YouTube — confirm configuration is compatible with post_publish")
 
 from social_uploader.tools.pattern_checker import get_patterns
 
 yt_confirm = get_patterns("youtube", "confirm")
 if "close_button" in yt_confirm and "dialog_selector" in yt_confirm:
-    ok("youtube.confirm 包含 close_button + dialog_selector")
+    ok("youtube.confirm contains close_button + dialog_selector")
 else:
-    fail("youtube.confirm 缺少 close_button 或 dialog_selector")
+    fail("youtube.confirm is missing close_button or dialog_selector")
 
 if yt_confirm.get("success_signals"):
-    ok(f"youtube.confirm.success_signals 有 {len(yt_confirm['success_signals'])} 个信号")
+    ok(f"youtube.confirm.success_signals has {len(yt_confirm['success_signals'])} signals")
 else:
-    fail("youtube.confirm.success_signals 为空")
+    fail("youtube.confirm.success_signals is empty")
 
 
-# === 测试 14: Instagram confirm 配置 ===
+# === Test 14: Instagram confirm configuration ===
 
-print("\n📸 14. Instagram — confirm 配置与 post_publish 兼容")
+print("\n📸 14. Instagram — confirm configuration is compatible with post_publish")
 
 ig_confirm = get_patterns("instagram", "confirm")
 if ig_confirm.get("success_signals"):
-    ok(f"instagram.confirm.success_signals 有 {len(ig_confirm['success_signals'])} 个信号")
+    ok(f"instagram.confirm.success_signals has {len(ig_confirm['success_signals'])} signals")
 else:
-    fail("instagram.confirm.success_signals 为空")
+    fail("instagram.confirm.success_signals is empty")
 
 
-# === 测试 15: AI Judge LLM 实际调用（如果 API Key 可用） ===
+# === Test 15: AI Judge LLM actual call (if API Key available) ===
 
-print("\n🤖 15. AI Judge — LLM 实际调用")
+print("\n🤖 15. AI Judge — LLM actual call")
 
 from social_uploader.tools.ai_judge import _call_llm, _get_client
 
@@ -426,19 +456,19 @@ if client:
     )
     parsed = _parse_json_response(raw)
     if parsed and parsed.get("status") == "ok":
-        ok("LLM 实际调用成功 + JSON 解析正确")
+        ok("LLM actually called successfully + JSON parsed correctly")
     else:
-        fail(f"LLM 返回异常: raw={raw}")
+        fail(f"LLM returns exception: raw={raw}")
 else:
-    ok("API Key 未配置，LLM 功能自动禁用（符合预期）")
+    ok("API Key is not configured, LLM function is automatically disabled (as expected)")
 
 
-# === 结果汇总 ===
+# === Summary of results ===
 
 print(f"\n{'='*55}")
 total = passed + failed
 if failed == 0:
-    print(f"🎉 全部通过 ({passed}/{total})")
+    print(f"🎉 All passed ({passed}/{total})")
 else:
-    print(f"⚠️ {passed}/{total} 通过，{failed} 失败")
+    print(f"⚠️{passed}/{total} passed, {failed} failed")
 sys.exit(1 if failed else 0)

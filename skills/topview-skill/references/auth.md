@@ -50,7 +50,7 @@ Credentials saved to ~/.topview/credentials.json ✓
 
 Extract the `URL: https://...` line from the login output and use the login message template from SKILL.md. The template includes both Chinese and English versions — pick the one matching the user's language.
 
-**Do NOT say** "浏览器已经打开" or "请在浏览器中操作" or "去那台电脑上看" — the user cannot see the browser or the machine running the agent.
+**Do NOT say** "the browser is open", "continue in the browser", or "check the other computer" — the user cannot see the browser or the machine running the agent.
 
 **Do NOT tell the user to register at topview.ai first.** The authorization page includes both login and registration. New users can sign up directly on that page.
 
@@ -119,4 +119,4 @@ All modules use `shared/config.py` which loads credentials in this order:
 - **NEVER** skip sending the login link. If you don't have the URL, re-run `auth.py login` to get it.
 - **ALWAYS** run `auth.py login` yourself, extract the `URL:` from the output, and send the direct authorization link to the user.
 - **ALWAYS** use the login message template from SKILL.md — keep it chat-friendly and beginner-level.
-- **ALWAYS** wait for the user to confirm (e.g. "好了") before continuing the task.
+- **ALWAYS** wait for the user to confirm (e.g. "done") before continuing the task.

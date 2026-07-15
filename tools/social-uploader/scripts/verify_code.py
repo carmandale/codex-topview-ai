@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-social_uploader 代码修改后自动化验证脚本。
+The social_uploader code is modified to automate the verification script.
 
-用法：.venv/bin/python scripts/verify_code.py
+Usage: .venv/bin/python scripts/verify_code.py
 
-检查分两档：
-  P0（必须通过）：import 验证、JSON 语法、CLI 可用性
-  P1（建议通过）：grep 模式匹配，检测旧写法和常见错误
+The inspection is divided into two levels:
+  P0 (must pass): import validation, JSON syntax, CLI availability
+  P1 (recommended to pass): grep pattern matching to detect old writing methods and common errors
 """
 
 import json
@@ -28,11 +28,11 @@ def record(level, name, passed, detail=""):
     print(f"  {icon} [{level}] {name}" + (f" — {detail}" if detail and not passed else ""))
 
 
-# ──────────────── P0：必须通过 ────────────────
+# ──────────────── P0: Must pass ────────────────
 
-print("\n🔍 P0 检查（必须通过）\n")
+print("\n🔍 P0 inspection (must pass)\n")
 
-# P0-1: 全量 import
+# P0-1: Full import
 try:
     import importlib
     modules = [
@@ -55,13 +55,13 @@ try:
         except Exception as e:
             failed_imports.append(f"{mod}: {e}")
     if failed_imports:
-        record("P0", "全量 import", False, "; ".join(failed_imports))
+        record("P0", "Full import", False, "; ".join(failed_imports))
     else:
-        record("P0", "全量 import", True)
+        record("P0", "Full import", True)
 except Exception as e:
-    record("P0", "全量 import", False, str(e))
+    record("P0", "Full import", False, str(e))
 
-# P0-2: button_config.json 语法
+# P0-2: button_config.json syntax
 btn_cfg = SRC_DIR / "button_config.json"
 try:
     data = json.loads(btn_cfg.read_text(encoding="utf-8"))
@@ -70,21 +70,21 @@ try:
         for v in data.values()
     )
     if is_valid:
-        record("P0", "button_config.json 语法", True)
+        record("P0", "button_config.json syntax", True)
     else:
-        record("P0", "button_config.json 语法", False, "结构不符合 平台→按钮名→列表 格式")
+        record("P0", "button_config.json syntax", False, "The structure does not conform to the platform→button name→list format")
 except Exception as e:
-    record("P0", "button_config.json 语法", False, str(e))
+    record("P0", "button_config.json syntax", False, str(e))
 
-# P0-3: default.json 语法
+# P0-3: default.json syntax
 default_json = SRC_DIR / "profiles" / "default.json"
 try:
     json.loads(default_json.read_text(encoding="utf-8"))
-    record("P0", "default.json 语法", True)
+    record("P0", "default.json syntax", True)
 except Exception as e:
-    record("P0", "default.json 语法", False, str(e))
+    record("P0", "default.json syntax", False, str(e))
 
-# P0-4: CLI 可用性
+# P0-4: CLI availability
 try:
     venv_python = PROJECT_ROOT / ".venv" / "bin" / "social-upload"
     if not venv_python.exists():
@@ -98,19 +98,19 @@ try:
     else:
         record("P0", "CLI --help", False, result.stderr[:200])
 except FileNotFoundError:
-    record("P0", "CLI --help", False, "social-upload 命令未找到，可能未安装（pip install -e .）")
+    record("P0", "CLI --help", False, "social-upload command not found, may not be installed (pip install -e .)")
 except Exception as e:
     record("P0", "CLI --help", False, str(e)[:200])
 
-# ──────────────── P1：建议通过 ────────────────
+# ──────────────── P1: Recommended to pass ────────────────
 
-print("\n🔍 P1 检查（建议通过）\n")
+print("\n🔍P1 inspection (recommended to pass)\n")
 
 uploaders_dir = SRC_DIR / "uploaders"
 uploader_files = list(uploaders_dir.glob("*.py"))
 all_py_files = list(SRC_DIR.rglob("*.py"))
 
-# P1-1: 无旧版 _should_skip 调用
+# P1-1: No legacy _should_skip call
 old_skip_hits = []
 for f in uploader_files:
     if f.name == "__init__.py":
@@ -120,11 +120,11 @@ for f in uploader_files:
         if "_should_skip(" in line and not line.strip().startswith("#") and not line.strip().startswith('"') and not line.strip().startswith("'"):
             old_skip_hits.append(f"{f.name}:{i}")
 if old_skip_hits:
-    record("P1", "无旧版 _should_skip 调用", False, f"发现于: {', '.join(old_skip_hits)}")
+    record("P1", "No legacy _should_skip call", False, f"Found on: {', '.join(old_skip_hits)}")
 else:
-    record("P1", "无旧版 _should_skip 调用", True)
+    record("P1", "No legacy _should_skip call", True)
 
-# P1-2: should_skip 调用传了 3 个参数（step, resume_from, STEPS）
+# P1-2: The should_skip call passes 3 parameters (step, resume_from, STEPS)
 bad_skip_calls = []
 for f in uploader_files:
     if f.name == "__init__.py":
@@ -138,13 +138,13 @@ for f in uploader_files:
         if match:
             args = [a.strip() for a in match.group(1).split(",")]
             if len(args) != 3:
-                bad_skip_calls.append(f"{f.name}:{i} (参数数={len(args)})")
+                bad_skip_calls.append(f"{f.name}:{i} (number of parameters={len(args)})")
 if bad_skip_calls:
-    record("P1", "should_skip 传 3 参数", False, f"不正确: {', '.join(bad_skip_calls)}")
+    record("P1", "should_skip passes 3 parameters", False, f"Incorrect: {', '.join(bad_skip_calls)}")
 else:
-    record("P1", "should_skip 传 3 参数", True)
+    record("P1", "should_skip passes 3 parameters", True)
 
-# P1-3: connect_browser 解包为 4 值
+# P1-3: connect_browser unpacked to 4 value
 bad_connect = []
 for f in all_py_files:
     content = f.read_text(encoding="utf-8")
@@ -158,11 +158,11 @@ for f in all_py_files:
             if comma_count < 3 and "connect_browser" not in lhs:
                 bad_connect.append(f"{f.relative_to(SRC_DIR)}:{i}")
 if bad_connect:
-    record("P1", "connect_browser 解包为 4 值", False, f"不正确: {', '.join(bad_connect)}")
+    record("P1", "connect_browser unpacks to 4 value", False, f"Incorrect: {', '.join(bad_connect)}")
 else:
-    record("P1", "connect_browser 解包为 4 值", True)
+    record("P1", "connect_browser unpacks to 4 value", True)
 
-# P1-4: dismiss_interfering_overlays 传 3 参数
+# P1-4: dismiss_interfering_overlays passes 3 parameters
 bad_dismiss = []
 for f in all_py_files:
     content = f.read_text(encoding="utf-8")
@@ -174,13 +174,13 @@ for f in all_py_files:
         if match:
             args = [a.strip() for a in match.group(1).split(",")]
             if len(args) != 3:
-                bad_dismiss.append(f"{f.relative_to(SRC_DIR)}:{i} (参数数={len(args)})")
+                bad_dismiss.append(f"{f.relative_to(SRC_DIR)}:{i} (number of parameters={len(args)})")
 if bad_dismiss:
-    record("P1", "dismiss_interfering_overlays 传 3 参数", False, f"不正确: {', '.join(bad_dismiss)}")
+    record("P1", "dismiss_interfering_overlays passes 3 parameters", False, f"Incorrect: {', '.join(bad_dismiss)}")
 else:
-    record("P1", "dismiss_interfering_overlays 传 3 参数", True)
+    record("P1", "dismiss_interfering_overlays passes 3 parameters", True)
 
-# ──────────────── 汇总 ────────────────
+# ─────────────── Summary ────────────────
 
 print("\n" + "=" * 50)
 p0_pass = all(r[2] for r in results if r[0] == "P0")
@@ -189,13 +189,13 @@ total_pass = sum(1 for r in results if r[2])
 total = len(results)
 
 if p0_pass and p1_pass:
-    print(f"🎉 全部通过 ({total_pass}/{total})")
+    print(f"🎉 All passed ({total_pass}/{total})")
     sys.exit(0)
 elif p0_pass:
     failed_p1 = [r[1] for r in results if r[0] == "P1" and not r[2]]
-    print(f"⚠️ P0 全部通过，P1 有 {len(failed_p1)} 项未通过: {', '.join(failed_p1)}")
+    print(f"⚠️ All P0 passed, P1 failed {len(failed_p1)} items: {', '.join(failed_p1)}")
     sys.exit(1)
 else:
     failed_p0 = [r[1] for r in results if r[0] == "P0" and not r[2]]
-    print(f"❌ P0 有 {len(failed_p0)} 项未通过（必须修复）: {', '.join(failed_p0)}")
+    print(f"❌ P0 has {len(failed_p0)} items that failed (must be repaired): {', '.join(failed_p0)}")
     sys.exit(2)

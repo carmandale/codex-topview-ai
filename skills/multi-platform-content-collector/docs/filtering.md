@@ -1,66 +1,66 @@
-# 筛选辅助参考
+# Filter secondary references
 
-本文件用于任何“按需求采集数据”的任务。核心不是关键词匹配，而是判断候选是否能服务用户的采集目标。
-
----
-
-## 判断方式：目标 → 证据 → 字段
-
-1. **目标匹配**：候选是否真的属于用户要收集的对象。
-2. **证据充分**：是否有公开链接、作者/来源、正文或可验证指标。
-3. **字段可抽取**：用户要的字段能否从来源中抽出；抽不到就标 `N/A`。
-4. **价值明确**：为什么这条值得收；用 `summary` / `insight` / `reason` 简短说明。
-
-不要只靠关键词机械过滤。标题命中关键词但内容不相关，要跳过；标题普通但正文很有价值，可以收。
+This file is used for any "data collection on demand" task. The core is not keyword matching, but determining whether the candidate can serve the user's collection goals.
 
 ---
 
-## 通用保留/跳过规则
+## Judgment method: target → evidence → field
 
-| 保留 | 跳过 |
+1. **Target matching**: Whether the candidate really belongs to the object the user wants to collect.
+2. **Sufficient Evidence**: Is there a public link, author/source, text, or verifiable metrics.
+3. **Field can be extracted**: Whether the field required by the user can be extracted from the source; if not, mark `N/A`.
+4. **Clear value**: Why this item is worth collecting; use `summary` / `insight` / `reason` to briefly explain.
+
+Don’t rely solely on keyword filtering. The title hits the keywords but the content is irrelevant, so you should skip it; the title is ordinary but the text is valuable, so you can accept it.
+
+---
+
+## Generic keep/skip rules
+
+| Reserve | Skip |
 |---|---|
-| 与用户目标直接相关 | 只是同名、蹭词、广告噪音 |
-| 有可追溯来源链接 | 来源不可访问或无法定位 |
-| 有作者、发布时间、互动数据中的至少部分信息 | 关键字段全部缺失 |
-| 能提炼出明确发现或用途 | 无法说明为什么相关 |
-| 用户明确要求“尽量多收”时的边缘相关项 | 私密、绕权限、付费墙内容 |
+| Directly related to user goals | Just the same name, rubbish, and advertising noise |
+| There is a traceable link to the source | The source is not accessible or cannot be located |
+| There is at least some information about the author, publication time, and interaction data | All key fields are missing |
+| Ability to distill clear findings or uses | Unable to explain why it is relevant |
+| Edge-related items when the user explicitly asks to "collect as much as possible" | Privacy, permission bypassing, paywall content |
 
-不确定但可能有价值时可以保留，并在 `note` 里标注“不确定原因”。
-
----
-
-## 场景参考
-
-### 竞品/选题
-
-保留：爆款视频、标题结构、评论痛点、卖点表达、内容形式。  
-跳过：纯教程、泛新闻、无互动或无内容细节的重复转发。
-
-### 创作者名单
-
-保留：账号主页、垂类明确、近期内容样例、可判断影响力的数据。  
-跳过：搬运号、空主页、无法确认平台身份的账号。
-
-### 评论/反馈
-
-保留：表达具体需求、痛点、夸赞、反对意见或购买/使用体验的评论。  
-跳过：表情、无意义短评、明显机器人刷屏。
-
-### AI 作品 + 提示词
-
-保留：展示 AI 作品且公开分享完整或可定位的 prompt。  
-跳过：只有作品但没有公开 prompt；教程/评测/新闻；付费引导获取 prompt。
-
-提示词必须原文记录，不改写、不翻译、不补全。
+If it is uncertain but may be valuable, it can be kept and marked with "reason for uncertainty" in `note`.
 
 ---
 
-## 反截断速查
+## Scene reference
 
-| 风险 | 解决 |
+### Competing products/topics
+
+Keep: popular videos, title structure, review pain points, selling point expression, and content format.
+Skip: pure tutorials, general news, repeated forwarding without interaction or content details.
+
+### Creator list
+
+Keep: account homepage, clear categories, recent content samples, and data that can determine influence.
+Skip: moving number, empty homepage, and accounts whose platform identity cannot be confirmed.
+
+### Comments/Feedback
+
+Reserved: Comments that express specific needs, pain points, compliments, objections, or purchase/use experiences.
+Skip: Emoticons, meaningless comments, and obvious robots that spam the screen.
+
+### AI works + prompt words
+
+Reserved: Demonstrate AI work and share complete or targetable prompts publicly.
+Skip: only works but no public prompts; tutorials/reviews/news; paid guides to obtain prompts.
+
+Prompt words must be recorded in the original text and must not be rewritten, translated, or completed.
+
+---
+
+## Anti-truncation quick check
+
+| Risk | Resolution |
 |---|---|
-| Reddit 正文被截断 | 用 `fetch_reddit_post.py` 或 Reddit JSON API |
-| TikTok 描述被截断 | 尝试 OCR，或标注信息在画面中 |
-| YouTube 描述不全 | `youtube video` 取描述，`youtube transcript` 取字幕 |
-| 命令行参数过长 | 用 `save_verified.py --from-file` 保存 JSON |
-| 表格写入后缺行 | 用 `write_rows.py` 的 `start_index` 断点续写 |
+| Reddit body truncated | Use `fetch_reddit_post.py` or Reddit JSON API |
+| TikTok description truncated | Try OCR, or annotate information in the screen |
+| YouTube description is incomplete | `youtube video` gets description, `youtube transcript` gets subtitles |
+| Command line parameter too long | Save JSON with `save_verified.py --from-file` |
+| Missing rows after table writing | Use the `start_index` breakpoint of `write_rows.py` to continue writing |

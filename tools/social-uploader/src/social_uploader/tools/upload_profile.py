@@ -1,10 +1,10 @@
 """
-上传配置文件加载器
+Upload configuration file loader
 
-职责：加载、验证、合并用户的上传配置（profile）。
-上传脚本通过 profile 获取可配置项的值，而非写死在代码里。
+Responsibilities: Load, verify, and merge users' uploaded profiles.
+The upload script obtains the value of the configurable item through the profile instead of hard-coding it in the code.
 
-配置优先级：用户 profile > 平台默认值 > common 默认值
+Configuration priority: user profile > platform default > common default
 """
 
 import json
@@ -19,7 +19,7 @@ _DEFAULT_PROFILE_PATH = os.path.join(_DIR, '..', 'profiles', 'default.json')
 
 
 def _deep_merge(base, override):
-    """递归合并两个字典，override 覆盖 base 的同名字段。"""
+    """Merge two dictionaries recursively, override covering the fields of base with the same name."""
     result = copy.deepcopy(base)
     for key, val in override.items():
         if key in result and isinstance(result[key], dict) and isinstance(val, dict):
@@ -31,12 +31,12 @@ def _deep_merge(base, override):
 
 def load_profile(profile_path=None):
     """
-    加载上传配置。
+    Load upload configuration.
 
-    - profile_path=None → 返回默认配置（行为和改动前完全一致）
-    - profile_path=路径 → 加载用户配置，与默认配置合并（用户的覆盖默认的）
+    - profile_path=None → Return to the default configuration (the behavior is exactly the same as before the change)
+    - profile_path=path → load user configuration and merge with default configuration (user's overrides default)
 
-    返回完整的 profile 字典。
+    Returns the complete profile dictionary.
     """
     with open(_DEFAULT_PROFILE_PATH, 'r', encoding='utf-8') as f:
         default = json.load(f)
@@ -45,7 +45,7 @@ def load_profile(profile_path=None):
         return default
 
     if not os.path.exists(profile_path):
-        logger.error(f"配置文件不存在: {profile_path}")
+        logger.error(f"Configuration file does not exist: {profile_path}")
         raise FileNotFoundError(f"Profile not found: {profile_path}")
 
     with open(profile_path, 'r', encoding='utf-8') as f:
@@ -56,19 +56,19 @@ def load_profile(profile_path=None):
     known_top_keys = {"common", "tiktok", "instagram", "youtube"}
     unknown = set(user_profile.keys()) - known_top_keys
     if unknown:
-        logger.warning(f"⚠️ 配置文件中有未识别的顶层字段: {unknown}，已忽略")
+        logger.warning(f"⚠️ There is an unrecognized top-level field in the configuration file: {unknown}, ignored")
 
     return merged
 
 
 def get_platform_config(profile, platform):
     """
-    获取某个平台的完整配置。
+    Get the complete configuration of a platform.
 
-    合并逻辑：common 作为基础 → 平台特定配置覆盖 common 的同名字段。
-    例如 common.visibility="public" 但 youtube.visibility="unlisted" → 最终 visibility="unlisted"
+    Merge logic: common as base → platform-specific configuration overrides fields of common with the same name.
+    For example common.visibility="public" but youtube.visibility="unlisted" → ultimately visibility="unlisted"
 
-    返回一个扁平字典，上传脚本直接用 config["字段名"] 取值。
+    Returns a flat dictionary, and the upload script directly uses config["field name"] to obtain the value.
     """
     common = profile.get("common", {})
     platform_specific = profile.get(platform, {})
@@ -79,32 +79,32 @@ _PLATFORM_CONSTRAINTS = [
     {
         "platform": "instagram",
         "check": lambda c: c.get("schedule") is not None,
-        "message": "Instagram 不支持定时发布，已自动移除，视频将立即发布",
+        "message": "Instagram does not support scheduled posting and has been automatically removed. The video will be posted immediately.",
         "strip_keys": ["schedule"],
     },
     {
         "platform": "instagram",
         "check": lambda c: c.get("visibility") is not None,
-        "message": "Instagram 不支持可见性设置，已自动移除",
+        "message": "Instagram doesn't support visibility settings and has been automatically removed",
         "strip_keys": ["visibility"],
     },
     {
         "platform": "tiktok",
         "check": lambda c: c.get("visibility") == "only_me" and c.get("schedule") is not None,
-        "message": "TikTok 仅自己可见的视频无法定时发布，已自动移除定时设置，视频将立即发布",
+        "message": "TikTok videos that are only visible to you cannot be published at a scheduled time. The timing setting has been automatically removed and the video will be published immediately.",
         "strip_keys": ["schedule"],
     },
 ]
 
 
 def validate_platform_config(platform, config):
-    """校验平台配置，自动移除不兼容的选项并返回警告列表。
+    """Verify platform configuration, automatically remove incompatible options and return warning list.
 
-    只拦截"危险的静默忽略"——即不拦截会导致用户实际损失的场景
-    （例如用户以为视频已定时但实际立即发布）。
-    不维护全量支持矩阵，避免新增配置项时被误杀。
+    Only intercept "dangerous silent ignores" - that is, do not intercept scenarios that will cause actual losses to the user
+    (For example, the user thought the video was timed but it was actually released immediately).
+    Do not maintain the full support matrix to avoid accidental killing when adding new configuration items.
 
-    返回 (config, warnings)，config 已就地修正，warnings 为字符串列表。
+    Return (config, warnings), config has been corrected in place, and warnings is a list of strings.
     """
     warnings = []
     for rule in _PLATFORM_CONSTRAINTS:

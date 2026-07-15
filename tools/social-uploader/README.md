@@ -1,35 +1,35 @@
 # social-uploader
 
-社交媒体视频自动上传 CLI 工具，支持 TikTok / Instagram / YouTube。
+CLI for uploading videos to TikTok, Instagram, and YouTube through a local Chrome debug session.
 
-基于 [DrissionPage](https://drissionpage.cn) 浏览器自动化，连接本地 Chrome 调试端口完成上传操作。
+It uses [DrissionPage](https://drissionpage.cn) browser automation and never handles platform passwords.
 
 ---
 
-## 快速安装
+## Quick installation
 
 ### macOS
 
 ```bash
-cd 项目根目录
+cd <project-root>/tools/social-uploader
 bash scripts/install.sh
 ```
 
 ### Windows
 
 ```cmd
-cd 项目根目录
+cd <project-root>\tools\social-uploader
 scripts\install.bat
 ```
 
-> **Windows 注意**：离线 wheel 包为 macOS 版本，Windows 安装时需要联网下载依赖（脚本会自动从 PyPI 下载）。
+> **Windows Note**: The offline wheel package is the macOS version. When installing Windows, you need to be online to download the dependencies (the script will automatically download it from PyPI).
 
 <details>
-<summary>手动安装（如一键脚本出错）</summary>
+<summary>Manual installation (such as one-click script error)</summary>
 
 **macOS:**
 ```bash
-cd 社交媒体skill
+cd <project-root>/tools/social-uploader
 python3 -m venv .venv
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install ./DrissionPage
@@ -39,7 +39,7 @@ python3 -m venv .venv
 
 **Windows:**
 ```cmd
-cd 社交媒体skill
+cd <project-root>\tools\social-uploader
 python -m venv .venv
 .venv\Scripts\pip install --upgrade pip
 .venv\Scripts\pip install .\DrissionPage
@@ -48,154 +48,154 @@ python -m venv .venv
 ```
 </details>
 
-## 前置条件
+## Preconditions
 
-1. **Google Chrome** 浏览器已安装
+1. **Google Chrome** browser is installed
 2. **Python 3.9+**
-   - macOS: `brew install python@3.10` 或从 python.org 下载
-   - Windows: 从 [python.org](https://www.python.org/downloads/) 下载，安装时勾选 **Add Python to PATH**
+   - macOS: `brew install python@3.10` or download from python.org
+   - Windows: Download from [python.org](https://www.python.org/downloads/) and check **Add Python to PATH** during installation.
 
-## 使用方式
+## Usage
 
-### 第一步：启动 Chrome 调试模式
+### Step 1: Enable Chrome debugging mode
 
-| 系统 | 命令 |
+| System | Commands |
 |------|------|
 | macOS | `bash scripts/start_chrome_debug.sh` |
-| Windows | 双击 `scripts\start_chrome_debug.bat` 或在命令行执行 |
+| Windows | Double-click `scripts\start_chrome_debug.bat` or execute it from the command line |
 
-### 第二步：在浏览器中手动登录目标平台
+### Step 2: Manually log in to the target platform in the browser
 
-本工具不接触任何账号密码，需要你自己先登录。
+This tool does not touch any account password and requires you to log in first.
 
-### 第三步：上传视频
+### Step 3: Upload the video
 
 **macOS:**
 ```bash
 # TikTok
-.venv/bin/social-upload tiktok --video "视频.mp4" --title "标题" --description "描述"
+.venv/bin/social-upload tiktok --video "video.mp4" --title "title" --description "describe"
 
-# TikTok 定时发布
-.venv/bin/social-upload tiktok --video "视频.mp4" --title "标题" --description "描述" --schedule "2026-04-10 15:00"
+# TikTok scheduled release
+.venv/bin/social-upload tiktok --video "video.mp4" --title "title" --description "describe" --schedule "2026-04-10 15:00"
 
 # Instagram
-.venv/bin/social-upload instagram --video "视频.mp4" --caption "文案 #hashtag"
+.venv/bin/social-upload instagram --video "video.mp4" --caption "Copywriting #hashtag"
 
 # YouTube
-.venv/bin/social-upload youtube --video "视频.mp4" --title "标题" --description "描述"
+.venv/bin/social-upload youtube --video "video.mp4" --title "title" --description "describe"
 
-# YouTube 定时发布 + 不公开列出
-.venv/bin/social-upload youtube --video "视频.mp4" --title "标题" --description "描述" --schedule "2026-04-10 15:00" --visibility unlisted
+# YouTube Scheduled + Unlisted
+.venv/bin/social-upload youtube --video "video.mp4" --title "title" --description "describe" --schedule "2026-04-10 15:00" --visibility unlisted
 
-# 仅填表单不发布
-.venv/bin/social-upload tiktok --video "视频.mp4" --title "标题" --description "描述" --no-publish
+# Just fill in the form without publishing
+.venv/bin/social-upload tiktok --video "video.mp4" --title "title" --description "describe" --no-publish
 ```
 
 **Windows:**
 ```cmd
 :: TikTok
-.venv\Scripts\social-upload tiktok --video "视频.mp4" --title "标题" --description "描述"
+.venv\Scripts\social-upload tiktok --video "video.mp4" --title "title" --description "describe"
 
-:: TikTok 定时发布
-.venv\Scripts\social-upload tiktok --video "视频.mp4" --title "标题" --description "描述" --schedule "2026-04-10 15:00"
+:: TikTok scheduled release
+.venv\Scripts\social-upload tiktok --video "video.mp4" --title "title" --description "describe" --schedule "2026-04-10 15:00"
 
 :: Instagram
-.venv\Scripts\social-upload instagram --video "视频.mp4" --caption "文案 #hashtag"
+.venv\Scripts\social-upload instagram --video "video.mp4" --caption "Copywriting #hashtag"
 
 :: YouTube
-.venv\Scripts\social-upload youtube --video "视频.mp4" --title "标题" --description "描述"
+.venv\Scripts\social-upload youtube --video "video.mp4" --title "title" --description "describe"
 
-:: YouTube 定时发布 + 不公开列出
-.venv\Scripts\social-upload youtube --video "视频.mp4" --title "标题" --description "描述" --schedule "2026-04-10 15:00" --visibility unlisted
+:: YouTube Scheduled + Unlisted
+.venv\Scripts\social-upload youtube --video "video.mp4" --title "title" --description "describe" --schedule "2026-04-10 15:00" --visibility unlisted
 
-:: 仅填表单不发布
-.venv\Scripts\social-upload tiktok --video "视频.mp4" --title "标题" --description "描述" --no-publish
+:: Just fill in the form without publishing
+.venv\Scripts\social-upload tiktok --video "video.mp4" --title "title" --description "describe" --no-publish
 ```
 
-> **定时发布说明**：`--schedule` 使用的是平台内置的定时发布功能（视频立即上传，到设定时间自动公开），不是系统级定时任务。
+> **Scheduled release instructions**: `--schedule` uses the platform's built-in scheduled release function (the video is uploaded immediately and automatically published at the set time), not a system-level scheduled task.
 
-## 在 Cursor 中使用（Skill 模式）
+## Used in Cursor (Skill mode)
 
-本项目包含 Cursor Agent Skill 定义（`.cursor/skills/social-media-uploader/SKILL.md`）。
+This project contains the Cursor Agent Skill definition (`.cursor/skills/social-media-uploader/SKILL.md`).
 
-在 Cursor 中打开本项目后，直接对 AI 说：
+After opening this project in Cursor, say directly to the AI:
 
-> "帮我把桌面上的 vlog.mp4 上传到 TikTok，标题叫'周末探店'"
+> "Help me upload the vlog.mp4 on my desktop to TikTok with the title 'Weekend Store Visit'"
 
-AI 会自动检测操作系统并调用对应命令完成上传。
+AI will automatically detect the operating system and call the corresponding command to complete the upload.
 
-## 项目结构
+## Project structure
 
 ```
-项目根目录/
-├── pyproject.toml                      # 包定义 + 依赖
-├── README.md                           # 本文件
+Project root directory/
+├── pyproject.toml                      # Package definition + dependencies
+├── README.md                           # this document
 │
-├── src/social_uploader/                # 【正式代码】CLI 包
-│   ├── command_entry.py                # 命令入口（接收指令、分发任务）
-│   ├── repair_engine.py              # 日志记录 + 自动修复引擎
-│   ├── error_classifier.py            # 错误分类（判断 AI 能否自修）
-│   ├── button_config.json             # 按钮配置表（修复时只改这里）
-│   ├── state_patterns.json            # 状态信号 + 交互配方（recipe）
+├── src/social_uploader/                # [Official code] CLI package
+│   ├── command_entry.py                # Command entrance (receive instructions, distribute tasks)
+│   ├── repair_engine.py              # Logging + Auto-repair engine
+│   ├── error_classifier.py            # Error classification (determining whether the AI ​​can teach itself)
+│   ├── button_config.json             # Button configuration table (only change this here when repairing)
+│   ├── state_patterns.json            # Status signal + interactive recipe (recipe)
 │   ├── profiles/
-│   │   └── default.json               # 默认上传配置
-│   ├── uploaders/                      # 各平台上传逻辑
-│   │   ├── __init__.py                 # 公共工具函数（should_skip 等）
-│   │   ├── video_check.py              # 视频文件校验 + 登录提示
+│   │   └── default.json               # Default upload configuration
+│   ├── uploaders/                      # Upload logic for each platform
+│   │   ├── __init__.py                 # Public utility functions (should_skip, etc.)
+│   │   ├── video_check.py              # Video file verification + login prompt
 │   │   ├── tiktok.py
 │   │   ├── instagram.py
 │   │   └── youtube.py
 │   └── tools/
-│       ├── browser_manager.py          # 浏览器管理（连接 + 新窗口 + 清弹窗）
-│       ├── element_finder.py           # 找按钮 + 加按钮
-│       ├── upload_profile.py           # 上传配置加载、合并与约束校验
-│       ├── pattern_checker.py          # 状态信号检测（成功/失败/弹窗）
-│       ├── recipe_runner.py            # 交互配方执行器（三层兜底）
-│       ├── agentql_client.py            # AgentQL AI 语义元素发现（Tier 2b）
-│       └── dom_heuristic.py           # 启发式 DOM 元素发现（Tier 2a）
+│       ├── browser_manager.py          # Browser management (connection + new window + clear pop-up window)
+│       ├── element_finder.py           # Find button + add button
+│       ├── upload_profile.py           # Upload configuration loading, merging and constraint verification
+│       ├── pattern_checker.py          # Status signal detection (success/failure/pop-up window)
+│       ├── recipe_runner.py            # Interactive recipe executor (three layers of security)
+│       ├── agentql_client.py            # AgentQL AI semantic element discovery (Tier 2b)
+│       └── dom_heuristic.py           # Heuristic DOM element discovery (Tier 2a)
 │
-├── scripts/                            # 所有脚本
-│   ├── install.sh                      # macOS 一键安装
-│   ├── install.bat                     # Windows 一键安装
-│   ├── start_chrome_debug.sh           # macOS Chrome 调试模式启动
-│   ├── start_chrome_debug.bat          # Windows Chrome 调试模式启动
-│   ├── verify_code.py                  # 代码修改后自动化验证（P0+P1 检查）
-│   └── test_logic.py                   # 全链路模拟测试（117 项检查点）
+├── scripts/                            # All scripts
+│   ├── install.sh                      # macOS one-click installation
+│   ├── install.bat                     # Windows one-click installation
+│   ├── start_chrome_debug.sh           # macOS Chrome debug mode starts
+│   ├── start_chrome_debug.bat          # Windows Chrome debug mode starts
+│   ├── verify_code.py                  # Automated verification after code modification (P0+P1 check)
+│   └── test_logic.py                   # Full-link simulation testing (117 checkpoints)
 │
-├── docs/                               # 文档
-│   ├── 项目规划文档.md                   # 项目规划与结构说明
-│   └── 自动修复机制说明.md               # 自动修复原理（通俗版）
+├── docs/                               # document
+│   ├── Project planning document.md                   # Project planning and structure description
+│   └── Automatic repair mechanism description.md               # Automatic repair principle (popular version)
 │
-├── DrissionPage/                       # DrissionPage 库源码（仅作依赖安装，勿在此运行脚本）
-│   ├── DrissionPage/                   # 库本体
+├── DrissionPage/                       # DrissionPage library source code (only for dependency installation, do not run scripts here)
+│   ├── DrissionPage/                   # Library ontology
 │   └── setup.py
 │
-├── .cursor/rules/                      # AI Agent 全局规则
-│   └── task-orchestration.mdc          # 任务调度（意图路由 + 多 Skill 编排）
+├── .cursor/rules/                      # AI Agent global rules
+│   └── task-orchestration.mdc          # Task scheduling (intent routing + multi-skill orchestration)
 │
-└── .cursor/skills/                     # AI Agent 指令
-    ├── social-media-uploader/          # 社交媒体上传 Skill
+└── .cursor/skills/                     # AI Agent Commands
+    ├── social-media-uploader/          # Social Media Upload Skill
     │   ├── SKILL.md
     │   ├── examples.md
     │   ├── troubleshooting.md
-    │   └── platforms/                  # 各平台配置项说明
-    ├── auto-repair/                    # 自动修复 Skill
+    │   └── platforms/                  # Description of configuration items for each platform
+    ├── auto-repair/                    # Automatic repair skill
     │   └── SKILL.md
-    ├── code-rules/                     # 代码规范 Skill
+    ├── code-rules/                     # Code Standard Skill
     │   └── SKILL.md
-    ├── code-review/                    # 代码修改后验证 Skill
+    ├── code-review/                    # Verification Skill after code modification
     │   └── SKILL.md
-    └── topview-skill/                  # AI 内容生成 Skill（视频/图片/配音）
+    └── topview-skill/                  # AI content generation skill (video/picture/dubbing)
         ├── SKILL.md
-        └── scripts/                    # Topview API 脚本
+        └── scripts/                    # Topview API script
 ```
 
-## 故障排查
+## Troubleshooting
 
-| 问题 | macOS | Windows |
+| Questions | macOS | Windows |
 |------|-------|---------|
-| Python 未找到 | `brew install python@3.10` | 从 python.org 下载，安装时勾选 Add to PATH |
-| Chrome 连接失败 | `bash scripts/start_chrome_debug.sh` | 双击 `scripts\start_chrome_debug.bat` |
-| 依赖安装失败 | 检查网络，或手动 `pip install ./DrissionPage` | 确保联网，Windows 需在线安装依赖 |
-| 上传按钮找不到 | 平台 UI 可能更新，用 `social-upload suggest-selectors` 修复 | 同左 |
-| `python3` 命令不存在 (Windows) | — | Windows 使用 `python` 而非 `python3` |
+| Python not found | `brew install python@3.10` | Download from python.org, check Add to PATH during installation |
+| Chrome connection failed | `bash scripts/start_chrome_debug.sh` | Double-click `scripts\start_chrome_debug.bat` |
+| Dependency installation failed | Check the network, or manually `pip install ./DrissionPage` | Make sure you are connected to the Internet, Windows needs to install dependencies online |
+| Upload button not found | Platform UI may be updated, use `social-upload suggest-selectors` to fix | Same as left |
+| `python3` command does not exist (Windows) | — | Windows uses `python` instead of `python3` |

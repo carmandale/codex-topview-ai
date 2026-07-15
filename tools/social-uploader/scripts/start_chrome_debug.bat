@@ -1,11 +1,11 @@
 @echo off
 chcp 65001 >nul 2>&1
 
-echo 正在关闭现有的 Chrome 进程...
+echo Closing existing Chrome process...
 taskkill /F /IM chrome.exe >nul 2>&1
 timeout /t 2 /nobreak >nul
 
-REM 按优先级尝试常见 Chrome 安装路径
+REM Try common Chrome installation paths in order of priority
 set CHROME_PATH=
 
 if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
@@ -21,18 +21,18 @@ if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" (
     goto :found
 )
 
-echo [错误] 未找到 Google Chrome，请手动指定路径或安装 Chrome
-echo    下载地址: https://www.google.com/chrome/
+echo [mistake] not found Google Chrome，Please specify the path manually or install Chrome
+echo    Download address: https://www.google.com/chrome/
 pause
 exit /b 1
 
 :found
-echo 正在以调试模式启动 Google Chrome (端口 9222)...
+echo Starting in debug mode Google Chrome (port 9222)...
 start "" "%CHROME_PATH%" --remote-debugging-port=9222 --restore-last-session
 
-echo 启动成功！现在你可以运行自动化脚本了。
+echo Started successfully! Now you can run the automation script。
 echo.
-echo 如果这是第一次使用，请先在浏览器中登录目标平台：
+echo If this is the first time you use it, please log in to the target platform in the browser first：
 echo   - TikTok: https://www.tiktok.com
 echo   - Instagram: https://www.instagram.com
 echo   - YouTube: https://studio.youtube.com

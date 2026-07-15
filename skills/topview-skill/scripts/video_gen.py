@@ -69,19 +69,17 @@ DEFAULT_INTERVAL = 5
 I2V_MODELS = {
     "Standard":                      {"aspectRatio": None,                                          "resolution": [480, 720],        "duration": "4-15",   "nativeAudio": True,  "inputMode": "first_end"},
     "Fast":                          {"aspectRatio": None,                                          "resolution": [480, 720],        "duration": "4-15",   "nativeAudio": True,  "inputMode": "first_end"},
+    "Seedance 2.0 Mini":            {"aspectRatio": None,                                          "resolution": [480, 720],        "duration": "4-15",   "nativeAudio": True,  "inputMode": "first_end"},
     "Seedance 1.5 Pro":             {"aspectRatio": None,                                          "resolution": [720, 1080],       "duration": "4-12",   "nativeAudio": True,  "inputMode": "first_end"},
     "Seedance 1.0 Pro Fast":        {"aspectRatio": None,                                          "resolution": [720, 1080],       "duration": "5,10,12","nativeAudio": False, "inputMode": "single"},
     "Seedance 1.0 Pro":             {"aspectRatio": None,                                          "resolution": [720, 1080],       "duration": "5,10,12","nativeAudio": False, "inputMode": "first_end"},
     "Kling V3":                     {"aspectRatio": None,                                          "resolution": [720, 1080],       "duration": "3-15",   "nativeAudio": True,  "inputMode": "first_end"},
-    "Kling V3 Reference Video":     {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": [720, 1080],       "duration": "3-15",   "nativeAudio": True,  "inputMode": "multi_ref"},
     "Kling O3":                     {"aspectRatio": None,                                          "resolution": [720, 1080],       "duration": "3-15",   "nativeAudio": True,  "inputMode": "first_end"},
     "Kling O3 Reference-to-Video":  {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": [720, 1080],       "duration": "3-15",   "nativeAudio": True,  "inputMode": "multi_ref"},
     "Kling 2.6":                    {"aspectRatio": None,                                          "resolution": None,              "duration": "5,10",   "nativeAudio": True,  "inputMode": "single"},
     "Kling O1 Reference-to-Video":  {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": [1080],            "duration": "3-10",   "nativeAudio": False, "inputMode": "multi_ref"},
     "Kling 2.5 Turbo Pro":          {"aspectRatio": None,                                          "resolution": [1080],            "duration": "5,10",   "nativeAudio": False, "inputMode": "first_end"},
     "Kling 2.5 Turbo Std":          {"aspectRatio": None,                                          "resolution": [1080],            "duration": "5,10",   "nativeAudio": False, "inputMode": "single"},
-    "Sora 2":                       {"aspectRatio": ["9:16", "16:9"],                              "resolution": None,              "duration": "4,8,12", "nativeAudio": False, "inputMode": "single"},
-    "Sora 2 Pro":                   {"aspectRatio": ["9:16", "16:9"],                              "resolution": [720, 1080],       "duration": "4,8,12", "nativeAudio": False, "inputMode": "single"},
     "Veo 3.1":                      {"aspectRatio": ["9:16", "16:9"],                              "resolution": [720, 1080, 2160], "duration": "4,6,8",  "nativeAudio": True,  "inputMode": "first_end"},
     "Veo 3.1 Reference to video":   {"aspectRatio": ["9:16", "16:9"],                              "resolution": [720, 1080, 2160], "duration": "8",      "nativeAudio": True,  "inputMode": "multi_ref"},
     "Veo 3.1 Fast":                 {"aspectRatio": ["9:16", "16:9"],                              "resolution": [720, 1080, 2160], "duration": "4,6,8",  "nativeAudio": True,  "inputMode": "first_end"},
@@ -92,7 +90,8 @@ I2V_MODELS = {
     "Vidu Q3 Pro":                  {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": [540, 720, 1080],  "duration": "1-16",   "nativeAudio": True,  "inputMode": "single"},
     "Vidu Q2 Reference to Video":   {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": [1080],            "duration": "2-10",   "nativeAudio": False, "inputMode": "multi_ref"},
     "Wan 2.6":                      {"aspectRatio": None,                                          "resolution": [720, 1080],       "duration": "5,10,15","nativeAudio": True,  "inputMode": "single"},
-    "Topview Lite":                 {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": None,              "duration": "5,10",   "nativeAudio": False, "inputMode": "single"},
+    "Gemini Omni Flash":            {"aspectRatio": ["9:16", "16:9"],                              "resolution": [720, 1080, 2160], "duration": "4,6,8,10","nativeAudio": False, "inputMode": "multi_ref"},
+    "Happy Horse 1.1":              {"aspectRatio": None,                                          "resolution": [720, 1080],       "duration": "3-15",   "nativeAudio": True,  "inputMode": "single"},
     "Topview Pro":                  {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": None,              "duration": "5,10",   "nativeAudio": False, "inputMode": "single"},
     "Topview Plus":                 {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": None,              "duration": "5,10",   "nativeAudio": False, "inputMode": "single"},
     "Topview Best":                 {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": None,              "duration": "5,10",   "nativeAudio": False, "inputMode": "single"},
@@ -101,6 +100,7 @@ I2V_MODELS = {
 T2V_MODELS = {
     "Standard":                      {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"], "resolution": [480, 720],        "duration": "4-15",   "nativeAudio": True},
     "Fast":                          {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"], "resolution": [480, 720],        "duration": "4-15",   "nativeAudio": True},
+    "Seedance 2.0 Mini":            {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"], "resolution": [480, 720],        "duration": "4-15",   "nativeAudio": True},
     "Seedance 1.5 Pro":             {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": [720, 1080],       "duration": "4-12",   "nativeAudio": True},
     "Seedance 1.0 Pro Fast":        {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": [720, 1080],       "duration": "5,10,12","nativeAudio": False},
     "Seedance 1.0 Pro":             {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": [720, 1080],       "duration": "5,10,12","nativeAudio": False},
@@ -109,8 +109,6 @@ T2V_MODELS = {
     "Kling 2.6":                    {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": None,              "duration": "5,10",   "nativeAudio": True},
     "Kling 2.5 Turbo Pro":          {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": [1080],            "duration": "5,10",   "nativeAudio": False},
     "Kling 2.5 Turbo Std":          {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": [1080],            "duration": "5,10",   "nativeAudio": False},
-    "Sora 2":                       {"aspectRatio": ["9:16", "16:9"],                              "resolution": None,              "duration": "4,8,12", "nativeAudio": False},
-    "Sora 2 Pro":                   {"aspectRatio": ["9:16", "16:9"],                              "resolution": [720, 1080],       "duration": "4,8,12", "nativeAudio": False},
     "Veo 3.1":                      {"aspectRatio": ["9:16", "16:9"],                              "resolution": [720, 1080, 2160], "duration": "4,6,8",  "nativeAudio": True},
     "Veo 3.1 Fast":                 {"aspectRatio": ["9:16", "16:9"],                              "resolution": [720, 1080, 2160], "duration": "4,6,8",  "nativeAudio": True},
     "MiniMax-Hailuo-02":            {"aspectRatio": None,                                          "resolution": [768, 1080],       "duration": "6,10",   "nativeAudio": False},
@@ -118,17 +116,20 @@ T2V_MODELS = {
     "Vidu Q3 Pro":                  {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": [540, 720, 1080],  "duration": "1-16",   "nativeAudio": True},
     "Vidu Q2":                      {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": [1080],            "duration": "2-10",   "nativeAudio": False},
     "Wan 2.6":                      {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": [720, 1080],       "duration": "5,10,15","nativeAudio": True},
-    "Topview Lite":                 {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": None,              "duration": "5,10",   "nativeAudio": False},
+    "Gemini Omni Flash":            {"aspectRatio": ["9:16", "16:9"],                              "resolution": [720, 1080, 2160], "duration": "4,6,8,10","nativeAudio": False},
+    "Happy Horse 1.1":              {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": [720, 1080],       "duration": "3-15",   "nativeAudio": True},
     "Topview Pro":                  {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],         "resolution": None,              "duration": "5,10",   "nativeAudio": False},
     "Topview Plus":                 {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": None,              "duration": "5,10",   "nativeAudio": False},
     "Topview Best":                 {"aspectRatio": ["9:16", "1:1", "16:9"],                       "resolution": None,              "duration": "5,10",   "nativeAudio": False},
 }
 
 OMNI_MODELS = {
-    "Standard":              {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"], "resolution": [480, 720],  "duration": "4-15",  "internetSearch": True,  "nativeAudio": True},
-    "Fast":                  {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"], "resolution": [480, 720],  "duration": "4-15",  "internetSearch": True,  "nativeAudio": True},
-    "Kling O3 Video-Edit":   {"aspectRatio": None,                                          "resolution": [720, 1080], "duration": "3-10",  "internetSearch": False, "nativeAudio": False},
-    "Kling O1 Video-Edit":   {"aspectRatio": None,                                          "resolution": [1080],      "duration": "3-10",  "internetSearch": False, "nativeAudio": False},
+    "Standard":              {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"], "resolution": [480, 720],        "duration": "4-15",  "internetSearch": True,  "nativeAudio": True},
+    "Fast":                  {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"], "resolution": [480, 720],        "duration": "4-15",  "internetSearch": True,  "nativeAudio": True},
+    "Seedance 2.0 Mini":     {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "21:9"], "resolution": [480, 720],        "duration": "4-15",  "internetSearch": True,  "nativeAudio": True},
+    "Gemini Omni Flash":     {"aspectRatio": None,                                          "resolution": [720, 1080, 2160], "duration": "",      "internetSearch": False, "nativeAudio": False},
+    "Kling O3 Video-Edit":   {"aspectRatio": None,                                          "resolution": [720, 1080],       "duration": "3-10",  "internetSearch": False, "nativeAudio": False},
+    "Kling O1 Video-Edit":   {"aspectRatio": None,                                          "resolution": [1080],            "duration": "3-10",  "internetSearch": False, "nativeAudio": False},
 }
 
 MODEL_REGISTRY = {"i2v": I2V_MODELS, "t2v": T2V_MODELS, "omni": OMNI_MODELS}
@@ -137,25 +138,22 @@ MODEL_REGISTRY = {"i2v": I2V_MODELS, "t2v": T2V_MODELS, "omni": OMNI_MODELS}
 # Per-second pricing rates (credits, generatingCount=1).
 # Key: (resolution_or_0, sound_on_or_None). 0 = resolution-independent, None = sound irrelevant.
 # totalCost = rate * duration * generatingCount
-# See references/api-docs.md for full pricing tables.
+# See references/video_gen.md for model constraints and pricing guidance.
 # ---------------------------------------------------------------------------
 
 _RATE = {
-    "Standard":                {(0, None): 1.0},
-    "Fast":                    {(0, None): 1.0},
+    "Standard":                {(480, None): 0.4, (720, None): 1.0, (1080, None): 2.0},
+    "Fast":                    {(480, None): 0.32, (720, None): 0.64},
     "Seedance 1.5 Pro":        {(720, False): 0.12, (720, True): 0.25, (1080, False): 0.28, (1080, True): 0.55},
     "Seedance 1.0 Pro Fast":   {(720, None): 0.07, (1080, None): 0.15},
     "Seedance 1.0 Pro":        {(720, None): 0.20, (1080, None): 0.45},
     "Kling V3":                {(720, False): 0.50, (720, True): 0.80, (1080, False): 0.80, (1080, True): 1.00},
-    "Kling V3 Reference Video":{(720, False): 0.50, (720, True): 0.80, (1080, False): 0.80, (1080, True): 1.00},
     "Kling O3":                {(720, False): 0.50, (720, True): 0.60, (1080, False): 0.80, (1080, True): 0.90},
     "Kling O3 Reference-to-Video": {(720, False): 0.50, (720, True): 0.60, (1080, False): 0.80, (1080, True): 0.90},
     "Kling 2.6":               {(0, False): 0.31, (0, True): 0.65},
     "Kling O1 Reference-to-Video": {(1080, None): 0.50},
     "Kling 2.5 Turbo Pro":     {(1080, None): 0.31},
     "Kling 2.5 Turbo Std":     {(1080, None): 0.20},
-    "Sora 2":                  {(0, None): 0.56},
-    "Sora 2 Pro":              {(720, None): 1.68, (1080, None): 2.80},
     "Veo 3.1":                 {(720, False): 1.10, (720, True): 2.20, (1080, False): 1.10, (1080, True): 2.20, (2160, False): 2.20, (2160, True): 3.30},
     "Veo 3.1 Reference to video": {(720, False): 1.10, (720, True): 2.20, (1080, False): 1.10, (1080, True): 2.20, (2160, False): 2.20, (2160, True): 3.30},
     "Veo 3.1 Fast":            {(720, False): 0.60, (720, True): 0.90, (1080, False): 0.60, (1080, True): 0.90, (2160, False): 1.70, (2160, True): 2.00},
@@ -167,12 +165,12 @@ _RATE = {
     "Vidu Q2":                 {(1080, None): 0.28},
     "Vidu Q2 Reference to Video": {(1080, None): 0.56},
     "Wan 2.6":                 {(720, None): 0.46, (1080, None): 0.77},
-    "Topview Lite":            {(0, None): 0.10},
+    "Gemini Omni Flash":       {(720, None): 0.5, (1080, None): 0.75, (2160, None): 1.0},
+    "Seedance 2.0 Mini":       {(480, None): 0.32, (720, None): 0.64},
+    "Happy Horse 1.1":         {(720, None): 1.2, (1080, None): 2.0},
     "Topview Pro":             {(0, None): 0.20},
     "Topview Plus":            {(0, None): 0.54},
     "Topview Best":            {(0, None): 1.55},
-    "Standard":                {(0, None): 1.0},
-    "Fast":                    {(0, None): 1.0},
     "Kling O3 Video-Edit":     {(720, None): 1.70, (1080, None): 2.00},
     "Kling O1 Video-Edit":     {(0, None): 0.80},
 }
@@ -193,6 +191,8 @@ def estimate_cost(model: str, resolution: int | None, duration: int,
 
 def _parse_duration_spec(spec: str) -> str:
     """Convert duration spec to human-readable hint for error messages."""
+    if not spec:
+        return "by video"
     if "," in spec:
         return f"one of [{spec}]s"
     if "-" in spec:
@@ -277,30 +277,31 @@ def resolve_file(client: TopviewClient, file_ref: str, quiet: bool) -> str:
 
 def build_storyboard_reference_prompt(script_prompt: str, image_count: int,
                                       descriptions: list[str] | None = None) -> str:
-    """Build the required prompt shape for storyboard-led video generation."""
+    """Build the required Chinese prompt shape for storyboard-led video generation."""
     descriptions = descriptions or []
     cn_numbers = {
-        2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八",
-        9: "九", 10: "十", 11: "十一", 12: "十二", 13: "十三", 14: "十四",
-        15: "十五", 16: "十六",
+        2: "\u4e8c", 3: "\u4e09", 4: "\u56db", 5: "\u4e94", 6: "\u516d",
+        7: "\u4e03", 8: "\u516b", 9: "\u4e5d", 10: "\u5341", 11: "\u5341\u4e00",
+        12: "\u5341\u4e8c", 13: "\u5341\u4e09", 14: "\u5341\u56db",
+        15: "\u5341\u4e94", 16: "\u5341\u516d",
     }
     lines = [
-        "图一（<<<Image1>>>）是分镜参考图。请严格参考它的镜头顺序、画面构图、人物/产品位置、节奏和转场，把它作为视频结构的主参考。",
+        "\u56fe\u4e00\uff08<<<Image1>>>\uff09\u662f\u5206\u955c\u53c2\u8003\u56fe\u3002\u8bf7\u4e25\u683c\u53c2\u8003\u5b83\u7684\u955c\u5934\u987a\u5e8f\u3001\u753b\u9762\u6784\u56fe\u3001\u4eba\u7269\u6216\u4ea7\u54c1\u4f4d\u7f6e\u3001\u8282\u594f\u548c\u8f6c\u573a\u3002",
     ]
 
     for idx in range(2, image_count + 1):
         desc_index = idx - 2
         desc = descriptions[desc_index].strip() if desc_index < len(descriptions) else ""
         if not desc:
-            desc = "用户提供的参考图片"
+            desc = "\u7528\u6237\u63d0\u4f9b\u7684\u53c2\u8003\u56fe\u7247"
         label = cn_numbers.get(idx, str(idx))
         lines.append(
-            f"图{label}（<<<Image{idx}>>>）是{desc}。请保留其中关键主体、商品外观、材质、颜色、人物特征或场景风格，并把它自然融入分镜对应画面。"
+            f"\u56fe{label}\uff08<<<Image{idx}>>>\uff09\u662f{desc}\u3002\u8bf7\u4fdd\u7559\u5173\u952e\u4e3b\u4f53\u3001\u5546\u54c1\u5916\u89c2\u3001\u6750\u8d28\u3001\u989c\u8272\u3001\u4eba\u7269\u7279\u5f81\u6216\u573a\u666f\u98ce\u683c\u3002"
         )
 
     lines.extend([
-        "生成时不要只照搬分镜图；分镜图负责镜头规划，后续参考图负责商品、人物、场景等真实视觉细节。",
-        "下面是视频脚本内容：",
+        "\u751f\u6210\u65f6\u4e0d\u8981\u53ea\u7167\u642c\u5206\u955c\u56fe\uff1b\u5206\u955c\u56fe\u8d1f\u8d23\u955c\u5934\u89c4\u5212\uff0c\u540e\u7eed\u53c2\u8003\u56fe\u8d1f\u8d23\u5546\u54c1\u3001\u4eba\u7269\u548c\u573a\u666f\u7ec6\u8282\u3002",
+        "\u4e0b\u9762\u662f\u89c6\u9891\u811a\u672c\u5185\u5bb9\uff1a",
         script_prompt.strip(),
     ])
     return "\n".join(lines)
@@ -395,6 +396,8 @@ def build_omni_body(args, client: TopviewClient) -> dict:
         body["resolution"] = args.resolution
     if args.duration:
         body["duration"] = args.duration
+    if args.sound:
+        body["sound"] = args.sound
     if args.count:
         body["generatingCount"] = args.count
     if args.internet_search:
@@ -473,35 +476,40 @@ def download_video(url: str, output: str, quiet: bool) -> None:
         print(f"Downloaded: {output} ({size_mb:.1f} MB)", file=sys.stderr)
 
 
-def print_result(result: dict, args) -> None:
+def print_result(result: dict, args, client: TopviewClient) -> None:
     """Print final result: video URLs by default, full JSON with --json."""
     videos = result.get("videos", [])
 
     if args.output_dir and videos:
         os.makedirs(args.output_dir, exist_ok=True)
         for i, v in enumerate(videos):
-            if v.get("status") == "success" and v.get("filePath"):
+            if str(v.get("status", "")).lower() == "success" and v.get("filePath"):
                 ext = "mp4"
                 out_path = os.path.join(args.output_dir, f"video_{i+1}.{ext}")
                 download_video(v["filePath"], out_path, args.quiet)
 
     if args.json:
-        print(json_mod.dumps(result, indent=2, ensure_ascii=False))
+        print(json_mod.dumps(client.shorten_urls_in_data(result), indent=2, ensure_ascii=False))
     else:
         cost = result.get("costCredit", "N/A")
+        board_id = result.get("boardId", "") or getattr(args, "board_id", "") or ""
         print(f"status: {result.get('status')}  cost: {cost} credits")
+        any_board_task = False
         for i, v in enumerate(videos):
-            status = v.get("status", "unknown")
+            status = str(v.get("status", "unknown"))
             url = v.get("filePath", "")
             err = v.get("errorMsg", "")
-            if status == "success":
-                print(f"  [{i+1}] {url}")
+            if status.lower() == "success":
+                print(f"  [{i+1}] {client.shorten_url(url)}")
             else:
                 print(f"  [{i+1}] {status}: {err}")
-    board_task_id = result.get("boardTaskId", "")
-    board_id = result.get("boardId", "") or getattr(args, "board_id", "") or ""
-    if board_task_id and board_id:
-        print(f"  edit: https://www.topview.ai/board/{board_id}?boardResultId={board_task_id}")
+            btid = v.get("boardTaskId")
+            if btid and board_id:
+                any_board_task = True
+                print(f"       edit: https://www.topview.ai/board/{board_id}?boardResultId={btid}")
+        if not any_board_task and board_id:
+            print(f"  [debug] boardTaskId not found, full result:", file=sys.stderr)
+            print(json_mod.dumps(result, indent=2, ensure_ascii=False), file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -518,11 +526,11 @@ def add_common_args(p):
                    help="Text prompt (required for t2v and omni)")
     p.add_argument("--aspect-ratio", default=None,
                    help='Aspect ratio, e.g. "16:9", "9:16", "1:1"')
-    p.add_argument("--resolution", type=int, default=None, choices=[480, 540, 720, 768, 1080, 2160],
+    p.add_argument("--resolution", type=int, default=720, choices=[480, 540, 720, 768, 1080, 2160],
                    help="Resolution (model-dependent): 480, 540, 720, 768, 1080, or 2160")
     p.add_argument("--duration", type=int, default=None,
                    help="Video duration in seconds")
-    p.add_argument("--count", type=int, default=None,
+    p.add_argument("--count", type=int, required=True,
                    help="Number of videos to generate (1-4)")
     p.add_argument("--board-id", default=None,
                    help="Board ID for task organization")
@@ -543,13 +551,13 @@ def add_i2v_args(p):
 def add_omni_args(p):
     """Add omni-reference specific arguments."""
     p.add_argument("--storyboard-image", default=None,
-                   help="Storyboard reference image. When set, this becomes Image1 and the prompt is rebuilt as storyboard + references + script.")
+                   help="Approved storyboard image. Becomes Image1 and rebuilds the prompt as storyboard + references + script.")
     p.add_argument("--input-images", nargs="+", default=None,
-                   help='Input images: Image1=path_or_fileId or bare refs; legacy JSON array is still supported')
+                   help='Input images: Image1=path_or_fileId or bare refs; legacy JSON is supported')
     p.add_argument("--reference-image-descriptions", nargs="+", default=None,
-                   help='Descriptions for images after --storyboard-image, in order. Example: "product photo" "creator reference"')
+                   help='Ordered descriptions for images after --storyboard-image')
     p.add_argument("--input-videos", nargs="+", default=None,
-                   help='Input videos: Video1=path_or_fileId or bare refs; legacy JSON array is still supported')
+                   help='Input videos: Video1=path_or_fileId or bare refs; legacy JSON is supported')
     p.add_argument("--internet-search", action="store_true",
                    help="Enable internet search for omni reference")
 
@@ -626,7 +634,7 @@ def cmd_estimate_cost(args, parser):
     cost = estimate_cost(args.model, args.resolution, args.duration, sound_on, args.count or 1)
     if cost is None:
         print(f"Cannot estimate cost for model '{args.model}' with given parameters.", file=sys.stderr)
-        print("Use list-models to see available models, or check references/api-docs.md.", file=sys.stderr)
+        print("Use list-models to see available models, or check references/video_gen.md.", file=sys.stderr)
         sys.exit(1)
     count = args.count or 1
     unit = round(cost / count, 2)
@@ -648,7 +656,7 @@ def cmd_run(args, parser):
     body = build_body(args, client)
     task_id = do_submit(client, args.type, body, args.quiet)
     result = do_poll(client, args.type, task_id, args.timeout, args.interval, args.quiet)
-    print_result(result, args)
+    print_result(result, args, client)
 
 
 def cmd_submit(args, parser):
@@ -668,7 +676,7 @@ def cmd_query(args, parser):
             client, args.type, args.task_id,
             args.timeout, args.interval, args.quiet,
         )
-        print_result(result, args)
+        print_result(result, args, client)
     except TimeoutError as e:
         if not args.quiet:
             print(f"Timeout reached: {e}", file=sys.stderr)
@@ -710,16 +718,16 @@ Examples:
 
   # Image-to-video with first frame
   python video_gen.py run --type i2v --model "Seedance 1.5 Pro" \\
-      --first-frame photo.png --prompt "A rotating product" --resolution 1080
+      --first-frame photo.png --prompt "A rotating product" --resolution 1080 --count 1
 
   # Text-to-video
   python video_gen.py run --type t2v --model "Seedance 1.5 Pro" \\
-      --prompt "A futuristic city" --aspect-ratio "16:9" --duration 5
+      --prompt "A futuristic city" --aspect-ratio "16:9" --duration 5 --count 1
 
   # Omni reference with image
   python video_gen.py run --type omni --model "Standard" \\
       --prompt "Transform <<<Image1>>> into watercolor animation" \\
-      --input-images Image1=photo.png
+      --input-images '[{"fileId":"file_abc","name":"Image1"}]' --count 1
 
   # Estimate cost before running
   python video_gen.py estimate-cost --model "Seedance 1.5 Pro" \\

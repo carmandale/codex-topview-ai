@@ -231,7 +231,7 @@ PROMPT_SUFFIXES_EN = [
     "here is the prompt", "prompt included", "full prompt",
 ]
 PROMPT_SUFFIXES_ZH = [
-    "提示词", "附提示词", "提示词分享", "prompt",
+    "prompt word", "Attached prompt word", "Tip word sharing", "prompt",
 ]
 
 

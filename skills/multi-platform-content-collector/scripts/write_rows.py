@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""逐行写入飞书表格，支持重试和断点续写"""
+"""Write to Feishu tables line by line, supporting retry and breakpoint continuation."""
 import subprocess
 import json
 import time

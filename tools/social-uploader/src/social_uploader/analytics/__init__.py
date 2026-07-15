@@ -1,1 +1,1 @@
-"""社交媒体数据分析模块 — 采集、存储、分析、报告。"""
+"""Social media data analysis module - collection, storage, analysis, reporting."""

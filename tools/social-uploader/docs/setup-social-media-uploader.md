@@ -1,285 +1,285 @@
-# Social Media Video Uploader — 完整工作流文档
+# Social Media Video Uploader — Complete Workflow Documentation
 
-通过 `social-upload` CLI 工具，将视频上传到 TikTok / Instagram / YouTube。支持单平台和多平台批量上传，包括平台原生定时发布功能。
-
----
-
-## 一、核心概念
-
-### 「定时发布」的含义
-
-**「定时发布」= 使用平台内置的 Schedule 功能**：视频立即上传到平台，设定未来某个时间自动公开。不是用系统定时任务延迟执行上传命令。
-
-用法：在上传命令中加 `--schedule "YYYY-MM-DD HH:MM"` 即可。
-
-### 安全策略
-
-1. **绝不接触用户凭证** — 不保存、不输入、不传输任何账号密码
-2. **用户提供密码时必须拒绝**
-3. **未登录即终止** — 脚本检测到未登录会自动 exit(1)
+Upload videos to TikTok / Instagram / YouTube via `social-upload` CLI tool. Supports single-platform and multi-platform batch uploads, including the platform's native scheduled release function.
 
 ---
 
-## 二、执行环境
+## 1. Core concepts
 
-| 配置项 | macOS | Windows |
+### The meaning of "scheduled release"
+
+**"Scheduled release" = Use the platform's built-in Schedule function**: The video is uploaded to the platform immediately and set to be automatically published at a certain time in the future. Instead of using a system scheduled task to delay the execution of the upload command.
+
+Usage: Add `--schedule "YYYY-MM-DD HH:MM"` to the upload command.
+
+### security policy
+
+1. **Never touch user credentials** — No account or password saved, entered, or transmitted
+2. **User must refuse when providing password**
+3. **Terminate if not logged in** — The script will automatically exit(1) if it detects that you are not logged in.
+
+---
+
+## 2. Execution environment
+
+| Configuration items | macOS | Windows |
 |--------|-------|---------|
-| CLI 命令 | `.venv/bin/social-upload` | `.venv\Scripts\social-upload` |
-| working_directory | 项目根目录（包含 `pyproject.toml`） | 同左 |
-| 运行模式 | `block_until_ms: 0`（后台执行，脚本需 3-5 分钟） | 同左 |
+| CLI commands | `.venv/bin/social-upload` | `.venv\Scripts\social-upload` |
+| working_directory | Project root directory (including `pyproject.toml`) | Same as left |
+| Run mode | `block_until_ms: 0` (executed in the background, the script takes 3-5 minutes) | Same as left |
 
-平台检测：`python -c "import sys; print(sys.platform)"` → `darwin` = macOS，`win32` = Windows。
+Platform detection: `python -c "import sys; print(sys.platform)"` → `darwin` = macOS, `win32` = Windows.
 
 ---
 
-## 三、平台路由
+## 3. Platform routing
 
-| 用户关键词 | 命令 |
+| User keywords | Commands |
 |-----------|------|
-| TikTok、抖音国际版 | `social-upload tiktok` |
+| TikTok, Douyin International Edition | `social-upload tiktok` |
 | Instagram、ins、IG | `social-upload instagram` |
-| YouTube、油管、YT | `social-upload youtube` |
-| 全平台、所有平台 | 依次执行三个，每个完成后汇报再执行下一个 |
+| YouTube, YouTube, YT | `social-upload youtube` |
+| All platforms, all platforms | Execute three in sequence, report after each completion and then execute the next one |
 
 ---
 
-## 四、完整执行流程
+## 4. Complete execution process
 
-### Step 1: 预检 + 收集信息
+### Step 1: Pre-check + collect information
 
-收到上传请求后，在同一回合内完成以下准备工作（不打断用户）。
+After receiving the upload request, complete the following preparations in the same turn (without interrupting the user).
 
-#### 1.1 识别平台 & 提取信息
+#### 1.1 Identify platform & extract information
 
-从用户消息中提取目标平台、视频路径、标题、描述等所有已知信息。
+Extract all known information such as target platform, video path, title, description, etc. from user messages.
 
-#### 1.2 读取默认配置
+#### 1.2 Read the default configuration
 
-读取 `src/social_uploader/profiles/default.json` 了解各平台默认值。
+Read `src/social_uploader/profiles/default.json` for each platform's default value.
 
-#### 1.3 检查 Chrome 调试端口
+#### 1.3 Check Chrome debug port
 
 ```bash
 curl -s http://localhost:9222/json/version
 ```
 
-#### 1.4 自动填充所有字段
+#### 1.4 Autofill all fields
 
-每个字段按以下优先级自动填值：
+Each field is automatically populated according to the following priorities:
 
-| 优先级 | 来源 | 举例 |
+| Priority | Source | Example |
 |--------|------|------|
-| 1 | 用户明确给了值 | "标题叫周末探店" → `周末探店` |
-| 2 | 从上下文推断 | 文件名 `cooking_vlog.mp4` → 标题 `cooking vlog` |
-| 3 | 合理建议值 | 用户说"定时发布"但没给时间 → 填 `明天 10:00（⏳ 请确认）` |
-| 4 | 平台默认值 | 没提可见性 → `所有人` |
+| 1 | The user clearly gave the value | "The title is Weekend Shop Visit" → `Weekend Shop Visit` |
+| 2 | Inferred from context | File name `cooking_vlog.mp4` → Title `cooking vlog` |
+| 3 | Reasonable recommended value | The user said "scheduled release" but did not give a time → fill in `tomorrow at 10:00 (confirmation required)` |
+| 4 | Platform defaults | No mention of visibility → `everyone` |
 
 ---
 
-### 各平台字段清单
+### List of fields for each platform
 
-#### TikTok 字段
+#### TikTok field
 
-| 字段 | 用户没说时的默认填充 |
+|Field |Default fill when user does not say anything |
 |------|-----------------|
-| 视频路径 | 唯一允许追问的字段 |
-| 标题 | 从文件名推断 |
-| 描述 | 复用标题 |
-| 封面 | 无（平台自动截取） |
-| 可见性 | 所有人 |
-| 定时发布 | 立即 |
-| 允许评论 | 是 |
-| 允许二创 | 是 |
-| 内容披露 | 否 |
-| AI 生成标记 | 否 |
-| 高画质上传 | 是 |
+| Video path | The only field that allows questioning |
+| title | inferred from file name |
+| description | reuse title |
+| Cover | None (automatically intercepted by the platform) |
+| Visibility | Everyone |
+| Scheduled release | Immediately |
+| Allow comments | Yes |
+| Allow second creation | Yes |
+| Content Disclosure | No |
+| AI generated tags | No |
+| High quality upload | Yes |
 
-**TikTok Profile 可配置项：** `visibility`、`schedule`、`allow_comments`、`allow_reuse`、`disclose_content`、`ai_generated`、`high_quality`
+**TikTok Profile configurable items:** `visibility`, `schedule`, `allow_comments`, `allow_reuse`, `disclose_content`, `ai_generated`, `high_quality`
 
-**CLI 可选参数：** `--cover`（封面图）、`--no-publish`（仅填表不发布）、`--resume-from`（断点恢复）、`--profile`（配置文件）
+**CLI optional parameters:** `--cover` (cover image), `--no-publish` (only fill in the form but not published), `--resume-from` (breakpoint recovery), `--profile` (configuration file)
 
-#### Instagram 字段
+#### Instagram field
 
-| 字段 | 用户没说时的默认填充 |
+|Field |Default fill when user does not say anything |
 |------|-----------------|
-| 视频路径 | 唯一允许追问的字段 |
-| 文案 | 自动拼接：标题 + 描述 |
-| 同步到动态流 | 是 |
-| 定时发布 | ❌ 不支持（平台限制） |
+| Video path | The only field that allows questioning |
+| Copywriting | Automatic splicing: title + description |
+| Sync to dynamic stream | Yes |
+| Scheduled release | ❌ Not supported (platform restriction) |
 
-**注意：** Instagram 没有单独的 `--title` 和 `--description`，只有 `--caption`。Instagram **不支持定时发布和可见性设置**。
+**Note:** Instagram does not have separate `--title` and `--description`, only `--caption`. Instagram **does not support scheduled posting and visibility settings**.
 
-**Profile 可配置项：** `share_to_feed`
+**Profile configurable items:** `share_to_feed`
 
-#### YouTube 字段
+#### YouTube field
 
-| 字段 | 用户没说时的默认填充 |
+|Field |Default fill when user does not say anything |
 |------|-----------------|
-| 视频路径 | 唯一允许追问的字段 |
-| 标题 | 从文件名推断（≤95 字符） |
-| 描述 | 复用标题（≤4900 字符） |
-| 面向儿童 | 否 |
-| 可见性 | 公开 |
-| 定时发布 | 立即 |
-| 标签 | 无 |
-| 分类 | 无 |
+| Video path | The only field that allows questioning |
+| Title | Inferred from file name (≤95 characters) |
+| Description | Reuse title (≤4900 characters) |
+| Not intended for children | No |
+| Visibility | Public |
+| Scheduled release | Immediately |
+| Tags | None |
+| Category | None |
 
-**Profile 可配置项：** `made_for_kids`、`visibility`(`public`/`unlisted`/`private`)、`tags`、`category`、`schedule`
+**Profile configurable items:** `made_for_kids`, `visibility`(`public`/`unlisted`/`private`), `tags`, `category`, `schedule`
 
-**定时发布注意：** 定时发布会自动将可见性设为 PUBLIC。设置失败时脚本中止发布，防止视频立即公开。
+**Scheduled release note:** Scheduled release automatically sets the visibility to PUBLIC. The script aborts publishing when setup fails, preventing the video from being made public immediately.
 
 ---
 
-### 1.4.1 平台约束校验
+### 1.4.1 Platform constraint verification
 
-| 约束 | 触发条件 | 处理 |
+| Constraints | Trigger conditions | Processing |
 |------|---------|------|
-| Instagram 不支持定时发布 | 用户要求 IG 定时 | 不传 `--schedule`，表格标注 `⚠️ 不支持` |
-| Instagram 不支持可见性 | 用户要求 IG 设可见性 | 不传 `--visibility`，不显示该字段 |
-| TikTok 仅自己可见无法定时 | 同时要求 `only_me` + 定时 | 不传 `--schedule`，只传 `--visibility only_me` |
+| Instagram does not support scheduled posting | The user requires IG to be scheduled | Do not pass `--schedule`; mark the table with `⚠️ Not supported` |
+| Instagram does not support visibility | User requires IG to set visibility | Do not pass `--visibility`, do not display this field |
+| TikTok is only visible to you and cannot be scheduled | Also requires `only_me` + timing | Do not send `--schedule`, only send `--visibility only_me` |
 
-#### 1.5 生成命令参数
+#### 1.5 Generate command parameters
 
-**核心约束：只传用户明确要求的参数。**
+**Core constraints: Only parameters explicitly requested by the user are passed. **
 
-CLI 支持两种方式传递非默认配置：
+The CLI supports two ways to pass non-default configuration:
 
-| 用户要求的配置 | 传参方式 |
+| Configuration required by user | Parameter transmission method |
 |--------------|---------|
-| 只有 schedule 和/或 visibility | 直接用 `--schedule` / `--visibility` CLI 参数 |
-| 包含其他选项（ai_generated、tags 等） | 创建 profile JSON，用 `--profile` 传入 |
-| 全部默认 | 不需要额外参数 |
+| Only schedule and/or visibility | Directly use `--schedule` / `--visibility` CLI parameters |
+| Contains other options (ai_generated, tags, etc.) | Create profile JSON, passing in `--profile` |
+| All default | No additional parameters required |
 
-**优先级：** CLI 参数 > profile 文件 > 默认值
+**Priority:** CLI Parameters > Profile > Default
 
-Profile JSON 保存到 `~/.social_uploader/profiles/profile_{时间戳}.json`。
-
----
-
-### Step 2: 展示完整方案，等用户确认
-
-输出结构：
-1. Chrome 连接状态 + 视频文件确认
-2. 各平台参数表格
-3. 📌 执行计划（执行顺序 + 即将执行的命令）
-4. 确认语
-
-**硬性规则：**
-- 回复中不允许出现问号（不追问）
-- 表格每个字段必须有值
-- 执行计划中的命令必须是真实将要执行的命令
-- 发出方案后必须等用户回复
-
-**用户说"好的"** → 执行 Step 3。**用户说要改某项** → 更新后重新展示。
+Profile JSON saved to `~/.social_uploader/profiles/profile_{timestamp}.json`.
 
 ---
 
-### Step 3: 执行上传
+### Step 2: Display the complete solution and wait for user confirmation
 
-以 `block_until_ms: 0` 后台执行，每 10-15 秒轮询终端输出，看到 🎉 或 exit_code 时判定完成。
+Output structure:
+1. Chrome connection status + video file confirmation
+2. Parameter table of each platform
+3. 📌 Execution plan (execution order + commands to be executed)
+4. Confirmation
 
-**执行前双向核对：**
-- 正向：用户要了的参数 → 命令必须有
-- 反向：用户没要的参数 → 命令禁止有
+**Hard Rules:**
+- Question marks are not allowed in replies (no follow-up questions)
+- Each field in the table must have a value
+- The commands in the execution plan must be the actual commands to be executed
+- After sending the plan, you must wait for the user's reply
 
-**命令格式示例：**
+**The user said "OK"** → Execute Step 3. **The user said he wants to change something** → Re-display after updating.
+
+---
+
+### Step 3: Perform upload
+
+Execute in the background with `block_until_ms: 0`, poll the terminal output every 10-15 seconds, and determine completion when seeing 🎉 or exit_code.
+
+**Two-way verification before execution:**
+- Forward: parameters requested by the user → the command must have
+- Reverse: Parameters not required by the user → command prohibition
+
+**Command format example:**
 
 ```bash
 # TikTok
-social-upload tiktok --video "路径" --title "标题" --description "描述"
-social-upload tiktok --video "路径" --title "标题" --description "描述" --schedule "2026-04-10 15:00"
+social-upload tiktok --video "path" --title "title" --description "describe"
+social-upload tiktok --video "path" --title "title" --description "describe" --schedule "2026-04-10 15:00"
 
-# Instagram（不支持 --schedule / --visibility）
-social-upload instagram --video "路径" --caption "文案内容"
+# Instagram (does not support --schedule / --visibility)
+social-upload instagram --video "path" --caption "Copy content"
 
 # YouTube
-social-upload youtube --video "路径" --title "标题" --description "描述"
-social-upload youtube --video "路径" --title "标题" --description "描述" --schedule "2026-04-10 15:00" --visibility unlisted
+social-upload youtube --video "path" --title "title" --description "describe"
+social-upload youtube --video "path" --title "title" --description "describe" --schedule "2026-04-10 15:00" --visibility unlisted
 ```
 
-**多平台上传：** 默认按 TikTok → Instagram → YouTube 顺序依次执行。每个完成后汇报，一个失败不影响下一个。
+**Multi-platform upload:** By default, the order is TikTok → Instagram → YouTube. Report after each completion, failure of one does not affect the next.
 
 ---
 
-### Step 4: 失败自动修复
+### Step 4: Automatic repair of failures
 
-终端输出 `DIAG|` 开头的行时触发自动修复。
+Automatic repair is triggered when the terminal outputs a line starting with `DIAG|`.
 
-| 错误类型 | 含义 | 处理 |
+| Error type | Meaning | Handling |
 |---------|------|------|
-| `selector_not_found` | 按钮找不到 | fix-selector 自动修复 |
-| `state_mismatch` | 状态检测文案过期 | fix-pattern 自动修复 |
-| `recipe_step_failed` | 配方某步失败（如定时发布） | show-recipe → fix-recipe → --resume-from 重试 |
-| `visibility_failed` | 可见性设置失败 | 同上 |
-| `file_rejected` | 视频被平台拒绝 | 通知用户检查格式 |
-| `platform_unavailable` | 平台不可用 | 等 3 分钟后从头重跑，最多 2 次 |
-| `login_required` | 未登录 | 提醒用户登录，--resume-from 重试 |
-| `timeout` | 超时 | 提醒检查网络 |
+| `selector_not_found` | Button not found | fix-selector automatic repair |
+| `state_mismatch` | Status detection copy expired | fix-pattern automatic repair |
+| `recipe_step_failed` | A certain step of the recipe failed (such as scheduled release) | show-recipe → fix-recipe → --resume-from retry |
+| `visibility_failed` | Visibility setting failed | Same as above |
+| `file_rejected` | Video rejected by the platform | Notify user to check format |
+| `platform_unavailable` | Platform unavailable | Wait 3 minutes and restart from the beginning, up to 2 times |
+| `login_required` | Not logged in | Remind the user to log in, --resume-from to try again |
+| `timeout` | Timeout | Reminder to check network |
 
 ---
 
-## 五、元素查找机制（双轨并行）
+## 5. Element search mechanism (dual-track parallelism)
 
-- **轨道 A（快速路径）：** 读取 `button_config.json` 选择器列表，1.5s 内快速尝试
-- **轨道 B（AI 路径）：** 轨道 A 未命中时，UltimateLocator 通过语义描述 + AgentQL AI API 定位元素
-- **失败兜底：** 双轨均未命中时输出 `DIAG|` 诊断行
+- **Track A (fast path):** Read `button_config.json` selector list, fast try in 1.5s
+- **Track B (AI Path):** When Track A misses, UltimateLocator locates the element via semantic description + AgentQL AI API
+- **Failure Diagnosis:** Output `DIAG|` diagnostic line when both rails miss
 
-交互配方（定时发布、可见性等）使用三层兜底：
-- **Tier 1：** 按 `state_patterns.json` 配方执行
-- **Tier 2a：** 选择器失败时用 `dom_heuristic` 启发式搜索
-- **Tier 2b：** 启发式失败时调 AgentQL AI API
-- **Tier 3：** 全部失败时输出 `DIAG|` 交给 Agent
+Interaction recipes (scheduled release, visibility, etc.) use three layers of security:
+- **Tier 1:** Executed according to `state_patterns.json` recipe
+- **Tier 2a:** Use `dom_heuristic` heuristic search when selector fails
+- **Tier 2b:** Call AgentQL AI API when heuristic fails
+- **Tier 3:** When all fails, `DIAG|` is output and handed over to the Agent.
 
 ---
 
-## 六、输出监控符号
+## 6. Output monitoring symbols
 
-| 符号 | 含义 |
+| Symbol | Meaning |
 |------|------|
-| ✅ | 步骤成功 |
-| ❌ | 步骤失败 |
-| ⚠️ | 需人工关注 |
-| 🎉 | 流程结束 |
+| ✅ | Step successful |
+| ❌ | Step failed |
+| ⚠️ | Requires manual attention |
+| 🎉 | End of process |
 
-退出码：`0` = 成功，`1` = 失败。
+Exit codes: `0` = success, `1` = failure.
 
 ---
 
-## 七、使用示例
+## 7. Usage examples
 
-### 单平台上传（默认配置）
+### Single platform upload (default configuration)
 
 ```bash
 # TikTok
-.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅"
+.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip"
 
-# TikTok（带封面图）
-.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末" --cover "/Users/xxx/cover.jpg"
+# TikTok (with cover image)
+.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "record weekend" --cover "/Users/xxx/cover.jpg"
 
 # Instagram
-.venv/bin/social-upload instagram --video "/Users/xxx/vlog.mp4" --caption "周末探店 🍜 #美食 #vlog"
+.venv/bin/social-upload instagram --video "/Users/xxx/vlog.mp4" --caption "Weekend store visit 🍜 #food #vlog"
 
 # YouTube
-.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅"
+.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip"
 ```
 
-### 定时发布和可见性
+### Scheduled publishing and visibility
 
 ```bash
-# TikTok 定时发布
+# TikTok scheduled release
 .venv/bin/social-upload tiktok --video "..." --title "..." --description "..." --schedule "2026-04-10 15:00"
 
-# TikTok 好友可见 + 定时发布
+# Visible to TikTok friends + scheduled publishing
 .venv/bin/social-upload tiktok --video "..." --title "..." --description "..." --schedule "2026-04-10 15:00" --visibility friends
 
-# YouTube 定时发布
+# YouTube scheduled releases
 .venv/bin/social-upload youtube --video "..." --title "..." --description "..." --schedule "2026-04-10 15:00"
 
-# YouTube 不公开列出
+# Unlisted on YouTube
 .venv/bin/social-upload youtube --video "..." --title "..." --description "..." --visibility unlisted
 ```
 
-### 使用自定义 Profile 配置
+### Use custom profile configuration
 
 ```json
 {
@@ -294,30 +294,30 @@ social-upload youtube --video "路径" --title "标题" --description "描述" -
 .venv/bin/social-upload tiktok --video "..." --title "..." --description "..." --profile ai_config.json
 ```
 
-### 仅填表单不发布
+### Just fill in the form without publishing
 
 ```bash
-.venv/bin/social-upload tiktok --video "..." --title "测试" --description "测试描述" --no-publish
+.venv/bin/social-upload tiktok --video "..." --title "test" --description "Test description" --no-publish
 ```
 
-### 从断点恢复
+### Resume from breakpoint
 
 ```bash
-.venv/bin/social-upload youtube --video "..." --title "标题" --description "描述" --resume-from publish
+.venv/bin/social-upload youtube --video "..." --title "title" --description "describe" --resume-from publish
 ```
 
-### 全平台依次上传
+### All platforms are uploaded sequentially
 
 ```bash
 # 1. TikTok
-.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅"
+.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip"
 # 2. Instagram
-.venv/bin/social-upload instagram --video "/Users/xxx/vlog.mp4" --caption "周末探店 🍜 记录周末的美食之旅"
+.venv/bin/social-upload instagram --video "/Users/xxx/vlog.mp4" --caption "Weekend shop visit 🍜 Record your weekend food trip"
 # 3. YouTube
-.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅"
+.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip"
 ```
 
-### 切换账号后重启浏览器
+### Restart the browser after switching accounts
 
 ```bash
 .venv/bin/social-upload restart-browser
@@ -327,54 +327,54 @@ scripts\start_chrome_debug.bat            # Windows
 
 ---
 
-## 八、故障排查
+## 8. Troubleshooting
 
-### 连接浏览器失败
-- 确认 Chrome 以调试模式启动：`bash scripts/start_chrome_debug.sh`
-- 验证端口：`curl -s http://localhost:9222/json/version`
+### Failed to connect to browser
+- Confirm Chrome starts in debug mode: `bash scripts/start_chrome_debug.sh`
+- Verification port: `curl -s http://localhost:9222/json/version`
 
-### 未登录
-- 脚本自动检测登录状态，未登录则 exit(1)
-- 在浏览器中手动登录后重试
+### Not logged in
+- The script automatically detects the login status and exit(1) if not logged in.
+- Try again after logging in manually in your browser
 
-### 找不到元素 / 页面结构变化
+### Element not found/page structure changed
 
-**按钮选择器修复（命令行操作，无需编辑文件）：**
-1. `social-upload suggest-selectors --run-id {run_id}` — 获取修复建议
-2. `social-upload fix-selector --target {平台} --key {按钮名} --selector "..."` — 执行修复
-3. 用 `--resume-from {步骤}` 从断点重试
+**Button picker fixes (command line operation, no need to edit files):**
+1. `social-upload suggest-selectors --run-id {run_id}` — Get fix suggestions
+2. `social-upload fix-selector --target {platform} --key {button_key} --selector "..."` — perform repair
+3. Retry from the breakpoint with `--resume-from {step}`
 
-**交互配方修复：**
-1. `social-upload show-recipe --target {平台} --recipe {配方名}` — 查看配方
-2. `social-upload fix-recipe --target {平台} --recipe {配方名} --step {步骤ID} --selector "新选择器"` — 修复
-- 配方名：`schedule_recipe`（定时发布）、`visibility_recipe`（可见性，TikTok）
+**Interactive recipe fixes:**
+1. `social-upload show-recipe --target {platform} --recipe {recipe_name}` — view the recipe
+2. `social-upload fix-recipe --target {platform} --recipe {recipe_name} --step {step_id} --selector "new_selector"` — fix it
+- Recipe name: `schedule_recipe` (scheduled release), `visibility_recipe` (visibility, TikTok)
 
-### DIAG 日志说明
-- 失败时写入 `~/.social_uploader/summary.jsonl`（索引）和 `detail_{run_id}.jsonl`（DOM 片段等详情）
-- `DIAG|` 格式：`DIAG|run_id=xxx|platform=xxx|step=xxx|error=xxx`
-- 用 `social-upload diag` 可手动提取浏览器精简 DOM
+### DIAG log description
+- On failure writes `~/.social_uploader/summary.jsonl` (index) and `detail_{run_id}.jsonl` (DOM fragment, etc. details)
+- `DIAG|` Format: `DIAG|run_id=xxx|platform=xxx|step=xxx|error=xxx`
+- Use `social-upload diag` to manually extract the browser condensed DOM
 
-### 切换 Chrome 账号后仍连接旧账号
-调试浏览器使用独立数据目录 `~/.chrome-social-upload`，与日常 Chrome 隔离。切换方法：
+### Still connected to old account after switching Chrome accounts
+The debug browser uses a separate data directory `~/.chrome-social-upload`, isolated from daily Chrome. Switching method:
 1. `social-upload restart-browser`
-2. 重启调试浏览器
-3. 在调试浏览器中退出旧账号、登录新账号
+2. Restart the debugging browser
+3. Log out of the old account and log in to the new account in the debugging browser
 
-### CLI 命令找不到
-- 确认安装：`.venv/bin/pip install -e .`
-- 确认环境：`.venv/bin/social-upload --help`
+### CLI command not found
+- Confirm installation: `.venv/bin/pip install -e .`
+- Confirm environment: `.venv/bin/social-upload --help`
 
 ---
 
-## 九、关键文件索引
+## 9. Key file index
 
-| 文件 | 角色 |
+| Files | Roles |
 |------|------|
-| `src/social_uploader/uploaders/tiktok.py` | TikTok 上传逻辑 |
-| `src/social_uploader/uploaders/instagram.py` | Instagram 上传逻辑 |
-| `src/social_uploader/uploaders/youtube.py` | YouTube 上传逻辑 |
-| `src/social_uploader/button_config.json` | 按钮选择器配置 |
-| `src/social_uploader/state_patterns.json` | 交互配方定义 |
-| `src/social_uploader/profiles/default.json` | 默认配置 |
-| `src/social_uploader/command_entry.py` | CLI 入口 |
-| `scripts/start_chrome_debug.sh` | Chrome 调试模式启动脚本 |
+| `src/social_uploader/uploaders/tiktok.py` | TikTok upload logic |
+| `src/social_uploader/uploaders/instagram.py` | Instagram upload logic |
+| `src/social_uploader/uploaders/youtube.py` | YouTube upload logic |
+| `src/social_uploader/button_config.json` | Button selector configuration |
+| `src/social_uploader/state_patterns.json` | Interactive recipe definition |
+| `src/social_uploader/profiles/default.json` | Default configuration |
+| `src/social_uploader/command_entry.py` | CLI Portal |
+| `scripts/start_chrome_debug.sh` | Chrome debug mode startup script |

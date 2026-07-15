@@ -1,13 +1,13 @@
-"""AgentQL 智能元素发现 — Tier 2b 兜底层。
+"""AgentQL intelligent element discovery - Tier 2b under the hood.
 
-采用两阶段发现策略：
-  阶段 1（AgentQL 语义识别）：将页面 HTML 发送到 AgentQL REST API，
-          用自然语言描述目标元素，获取粗定位属性（aria-label、id、class、css_selector）。
-  阶段 2（DrissionPage 属性精提）：用粗定位属性在页面上找到元素，
-          通过 JS 提取全部 HTML 属性（包括 data-e2e 等 AgentQL 看不到的自定义属性），
-          从中选出最稳定的选择器写回配置。
+Adopt a two-stage discovery strategy:
+  Phase 1 (AgentQL Semantic Identification): Send page HTML to AgentQL REST API,
+          Use natural language to describe the target element and obtain coarse positioning attributes (aria-label, id, class, css_selector).
+  Stage 2 (DrissionPage attribute refinement): Use coarse positioning attributes to find elements on the page,
+          Extract all HTML attributes (including custom attributes such as data-e2e that cannot be seen by AgentQL) through JS,
+          Select the most stable selector to write back the configuration.
 
-API Key 未设置时静默降级，不影响现有 Tier 1 / 2a / 3 流程。
+When the API Key is not set, it will be downgraded silently and will not affect the existing Tier 1 / 2a / 3 process.
 """
 
 import json
@@ -62,11 +62,11 @@ _EXTRACT_ATTRS_JS = """
 
 
 # ---------------------------------------------------------------------------
-# HTML 优化层
+# HTML optimization layer
 # ---------------------------------------------------------------------------
 
 def _clean_html(html):
-    """移除 script/style/svg/noscript 等无关标签，减小 API payload。"""
+    """Remove irrelevant tags such as script/style/svg/noscript to reduce API payload."""
     for tag in ("script", "style", "svg", "noscript", "link"):
         html = re.sub(
             rf"<{tag}[^>]*>.*?</{tag}>",
@@ -80,9 +80,9 @@ def _clean_html(html):
 
 
 def _extract_relevant_html(page, context_hint=""):
-    """从 DrissionPage page 对象提取适当大小的 HTML 片段（目标 <300KB）。
+    """Extracts an appropriately sized HTML fragment from the DrissionPage page object (target <300KB).
 
-    优先取小范围（dialog/form），再逐步扩大。
+    Give priority to a small range (dialog/form), and then gradually expand it.
     """
     candidates = ["@role=dialog", "tag:form", "tag:main", "tag:body"]
     if context_hint:
@@ -112,15 +112,15 @@ def _extract_relevant_html(page, context_hint=""):
 
 
 # ---------------------------------------------------------------------------
-# API 调用层
+# API call layer
 # ---------------------------------------------------------------------------
 
 def _call_agentql(html, query):
-    """调用 AgentQL REST API（query 语法），返回 data 字典或 None。"""
+    """Call the AgentQL REST API (query syntax), returning a data dictionary or None."""
     try:
         import requests
     except ImportError:
-        logger.debug("requests 未安装，跳过 AgentQL 调用")
+        logger.debug("requests is not installed, skip AgentQL call")
         return None
 
     if not html or not query:
@@ -141,23 +141,23 @@ def _call_agentql(html, query):
             _API_URL, json=payload, headers=headers, timeout=_API_TIMEOUT,
         )
         if resp.status_code != 200:
-            logger.warning(f"AgentQL API 返回 {resp.status_code}: {resp.text[:200]}")
+            logger.warning(f"AgentQL API returns {resp.status_code}: {resp.text[:200]}")
             return None
         result = resp.json()
         return result.get("data")
     except Exception as e:
-        logger.warning(f"AgentQL API 调用失败: {e}")
+        logger.warning(f"AgentQL API call failed: {e}")
         return None
 
 
 # ---------------------------------------------------------------------------
-# 阶段 1：AgentQL 语义识别 → 候选选择器列表
+# Phase 1: AgentQL Semantic Identification → Candidate Selector List
 # ---------------------------------------------------------------------------
 
 def _attrs_to_selectors(attrs):
-    """将 AgentQL 返回的元素属性转换为 DrissionPage 选择器候选列表。
+    """Convert the element properties returned by AgentQL into a DrissionPage selector candidate list.
 
-    按稳定性降序排列。跳过 None 和空字符串。
+    Sorted in descending order of stability. Skip None and empty strings.
     """
     if not attrs or not isinstance(attrs, dict):
         return []
@@ -189,7 +189,7 @@ def _attrs_to_selectors(attrs):
 
 
 def _agentql_identify(html, description, platform=""):
-    """阶段 1：调用 AgentQL API 获取候选选择器列表。"""
+    """Phase 1: Call the AgentQL API to get the list of candidate selectors."""
     platform_hint = f" on {platform}" if platform else ""
     query = _QUERY_TEMPLATE.format(
         description=f"{description}{platform_hint}",
@@ -211,7 +211,7 @@ def _agentql_identify(html, description, platform=""):
 
 
 # ---------------------------------------------------------------------------
-# 阶段 2：DrissionPage 属性精提 → 最优选择器
+# Stage 2: DrissionPage attribute refinement → optimal selector
 # ---------------------------------------------------------------------------
 
 _SELECTOR_PRIORITY = [
@@ -224,7 +224,7 @@ _SELECTOR_PRIORITY = [
 
 
 def _extract_best_selector(page, element):
-    """从已找到的元素中提取全部属性，选出最稳定的 DrissionPage 选择器。"""
+    """Extract all attributes from the found elements and select the most stable DrissionPage selector."""
     try:
         from social_uploader.tools.js_runner import run_iife
         raw = run_iife(page, _EXTRACT_ATTRS_JS, element)
@@ -232,7 +232,7 @@ def _extract_best_selector(page, element):
             return None
         attrs = json.loads(raw) if isinstance(raw, str) else raw
     except Exception as e:
-        logger.debug(f"属性精提失败: {e}")
+        logger.debug(f"Attribute refining failed: {e}")
         return None
 
     for attr_name, template in _SELECTOR_PRIORITY:
@@ -248,11 +248,11 @@ def _extract_best_selector(page, element):
 
 
 # ---------------------------------------------------------------------------
-# 安全校验
+# Security check
 # ---------------------------------------------------------------------------
 
 def _is_safe_element(element, expected_description):
-    """防止 AI 定位到危险按钮（如把"删除"当成"发布"）。"""
+    """Prevent AI from targeting dangerous buttons (such as mistaking "delete" for "publish")."""
     try:
         el_text = (element.text or "").strip().lower()
     except Exception:
@@ -262,38 +262,38 @@ def _is_safe_element(element, expected_description):
     for kw in DANGEROUS_KEYWORDS:
         if kw in el_text and kw not in desc_lower:
             logger.warning(
-                f"AgentQL 安全拦截：元素文本 '{el_text}' 含危险词 '{kw}'，"
-                f"但目标描述 '{expected_description}' 中不含该词"
+                f"AgentQL security interception: element text '{el_text}' contains the dangerous word '{kw}',"
+                f"But the target description '{expected_description}' does not contain this word"
             )
             return False
     return True
 
 
 # ---------------------------------------------------------------------------
-# 对外接口
+# External interface
 # ---------------------------------------------------------------------------
 
 def find_element_with_ai(page, description, platform=""):
-    """两阶段发现：AgentQL 语义识别 → DrissionPage 属性精提。
+    """Two-stage discovery: AgentQL semantic recognition → DrissionPage attribute refinement.
 
-    返回 (element, best_selector) 或 (None, None)。
+    Return (element, best_selector) or (None, None).
     """
     if not _API_KEY:
-        logger.debug("AGENTQL_API_KEY 未设置，跳过 AI 发现")
+        logger.debug("AGENTQL_API_KEY not set, skips AI discovery")
         return None, None
 
     html = _extract_relevant_html(page)
     if not html:
-        logger.debug("无法提取页面 HTML，跳过 AI 发现")
+        logger.debug("Unable to extract page HTML, skipping AI discovery")
         return None, None
 
-    logger.info(f"  🧠 AgentQL Tier 2b: 正在识别 '{description}' (HTML {len(html)//1024}KB)...")
+    logger.info(f"  🧠 AgentQL Tier 2b: Recognizing '{description}' (HTML {len(html)//1024}KB)...")
     candidates = _agentql_identify(html, description, platform)
     if not candidates:
-        logger.info(f"  🧠 AgentQL 未返回有效属性")
+        logger.info(f"  🧠 AgentQL did not return a valid attribute")
         return None, None
 
-    logger.info(f"  🧠 AgentQL 返回 {len(candidates)} 个候选选择器: {candidates}")
+    logger.info(f"  🧠 AgentQL returns {len(candidates)} candidate selectors: {candidates}")
 
     for sel in candidates:
         try:
@@ -305,7 +305,7 @@ def find_element_with_ai(page, description, platform=""):
 
             best = _extract_best_selector(page, el)
             if best:
-                logger.info(f"  🧠 两阶段精提最优选择器: {best}")
+                logger.info(f"  🧠 Two-stage extraction optimal selector: {best}")
                 return el, best
             else:
                 return el, sel
@@ -316,7 +316,7 @@ def find_element_with_ai(page, description, platform=""):
 
 
 def discover_with_ai(page, semantic_hint, action="click", context_selector=None):
-    """供 recipe_runner 调用的简化接口，返回选择器字符串或 None。"""
+    """Simplified interface for recipe_runner to call, returning a selector string or None."""
     if not _API_KEY:
         return None
 

@@ -34,7 +34,6 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from shared.client import TopviewClient, TopviewError
-from shared.cli_parsers import parse_point_pairs
 from shared.upload import resolve_local_file
 
 SUBMIT_PATH = "/v3/product_avatar/task/image_replace/submit"
@@ -85,9 +84,8 @@ def build_body(args, client: TopviewClient) -> dict:
         body["keepTarget"] = args.keep_target
     if args.version:
         body["version"] = args.version
-    location = parse_point_pairs(args.location, args.location_points)
-    if location:
-        body["location"] = location
+    if args.location:
+        body["location"] = json_mod.loads(args.location)
     if args.product_size is not None:
         body["productSize"] = args.product_size
     if args.project_id:
@@ -147,10 +145,10 @@ def download_file(url: str, output: str, quiet: bool) -> None:
         print(f"Downloaded: {output} ({size_kb:.1f} KB)", file=sys.stderr)
 
 
-def print_result(result: dict, args) -> None:
+def print_result(result: dict, args, client: TopviewClient) -> None:
     """Print final result."""
     if args.json:
-        print(json_mod.dumps(result, indent=2, ensure_ascii=False))
+        print(json_mod.dumps(client.shorten_urls_in_data(result), indent=2, ensure_ascii=False))
     else:
         status = result.get("status", "unknown")
         cost = result.get("costCredit", FIXED_COST)
@@ -158,13 +156,16 @@ def print_result(result: dict, args) -> None:
 
         result_url = result.get("finishedVideoUrl") or result.get("resultImageUrl") or ""
         if result_url:
-            print(f"  result: {result_url}")
+            print(f"  result: {client.shorten_url(result_url)}")
             if args.output and result_url:
                 download_file(result_url, args.output, args.quiet)
-    board_task_id = result.get("boardTaskId", "")
+    board_task_id = result.get("boardTaskId", "") or ""
     board_id = result.get("boardId", "") or getattr(args, "board_id", "") or ""
     if board_task_id and board_id:
         print(f"  edit: https://www.topview.ai/board/{board_id}?boardResultId={board_task_id}")
+    elif not board_task_id and board_id:
+        print(f"  [debug] boardTaskId not found, full result:", file=sys.stderr)
+        print(json_mod.dumps(result, indent=2, ensure_ascii=False), file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -192,9 +193,7 @@ def add_submit_args(p):
     p.add_argument("--version", default=None, choices=VALID_VERSIONS,
                    help="API version: v3 (default) or v4 (banana_pro, supports manual mode)")
     p.add_argument("--location", default=None,
-                   help='Legacy product coordinates as JSON 2D array, e.g. \'[[10.5, 20.0], [30.5, 40.0]]\'')
-    p.add_argument("--location-points", nargs="+", default=None,
-                   help='Product coordinates as x,y pairs, e.g. 10.5,20.0 30.5,40.0')
+                   help='Product coordinates as JSON 2D array, e.g. \'[[10.5, 20.0], [30.5, 40.0]]\'')
     p.add_argument("--product-size", type=int, default=None,
                    help="Product size (enum value)")
     p.add_argument("--project-id", default=None,
@@ -233,7 +232,7 @@ def cmd_run(args, parser):
     body = build_body(args, client)
     task_id = do_submit(client, body, args.quiet)
     result = do_poll(client, task_id, args.timeout, args.interval, args.quiet)
-    print_result(result, args)
+    print_result(result, args, client)
 
 
 def cmd_submit(args, parser):
@@ -251,7 +250,7 @@ def cmd_query(args, parser):
         result = do_poll(
             client, args.task_id, args.timeout, args.interval, args.quiet,
         )
-        print_result(result, args)
+        print_result(result, args, client)
     except TimeoutError as e:
         if not args.quiet:
             print(f"Timeout reached: {e}", file=sys.stderr)
@@ -359,7 +358,7 @@ Examples:
   python product_avatar.py run \\
       --product-image product.png --template-image template.png \\
       --mode manual --version v4 \\
-      --location-points 10.5,20.0 30.5,40.0
+      --location '[[10.5, 20.0], [30.5, 40.0]]'
 
   # With background-removed product image (from remove_bg.py)
   python product_avatar.py run \\

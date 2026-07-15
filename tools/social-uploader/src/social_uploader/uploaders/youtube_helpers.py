@@ -1,17 +1,17 @@
-"""YouTube 平台专属辅助函数（不含步骤编排）。
+"""YouTube platform-specific auxiliary functions (excluding step arrangement).
 
-【架构约定】
-- `tools/` = 全平台通用基础设施
-- `uploaders/youtube_helpers.py` = YouTube 专属辅助（仅 youtube.py 可 import）
-- `uploaders/youtube.py` = 步骤编排器（不写底层逻辑）
+[Architecture Agreement]
+- `tools/` = Common infrastructure for all platforms
+- `uploaders/youtube_helpers.py` = YouTube exclusive auxiliary (only youtube.py can be imported)
+- `uploaders/youtube.py` = Step arranger (does not write underlying logic)
 
-禁止跨平台 import：tiktok.py / instagram.py 不得 import 本模块。
+Cross-platform import is prohibited: tiktok.py / instagram.py This module is not allowed to be imported.
 
-【本模块包含】
-- `ensure_upload_dialog_open`    URL 直跳 + polling 等待 ytcp-uploads-dialog（最稳路径）
-- `find_file_input_deep`         穿透 Shadow DOM 查找 video file input（带 accept 过滤）
-- `_set_youtube_schedule`        定时发布配方执行 + CDP 时间字段聚焦
-- `_writeback_from_fallback`     索引模式找到的元素回写 button_config.json
+[This module includes]
+- `ensure_upload_dialog_open` URL direct jump + polling waiting for ytcp-uploads-dialog (the most stable path)
+- `find_file_input_deep` penetrates Shadow DOM to find video file input (with accept filtering)
+- `_set_youtube_schedule` scheduled release recipe execution + CDP time field focus
+- `_writeback_from_fallback` element found in index mode is written back button_config.json
 """
 
 import re
@@ -25,18 +25,18 @@ from social_uploader.tools.recipe_runner import run_recipe
 logger = logging.getLogger(__name__)
 
 
-# 深度查找视频专用 file input 的 JS。
-# 现实情况:
-#   - 真正的 YouTube Studio file input 在普通 DOM 内, accept 为空、name="Filedata"。
-#   - 浏览器扩展 (Glarity / 翻译插件等) 会注入 accept="application/pdf" 等噪音 input。
-#   - 实测 YouTube 当前没有 closed shadow DOM 包装, 但深度遍历仍可作为兜底。
-# 过滤规则:
-#   - accept 为空 / null → 接受 (YouTube 当前形态)
-#   - accept 含 "video" / "mp4" / "*" → 接受
-#   - 其它 (pdf / image / audio 等) → 拒绝, 防止误命中扩展
+# JS for deep search of video-specific file input.
+# Reality:
+# - The real YouTube Studio file input is in the ordinary DOM, accept is empty, name="Filedata".
+# - Browser extensions (Glarity/translation plug-ins, etc.) will inject noisy inputs such as accept="application/pdf".
+# - Actual measurement: YouTube currently does not have closed shadow DOM packaging, but depth traversal can still be used as a safety net.
+# Filter rules:
+# - accept is empty / null → accept (YouTube current form)
+# - accept contains "video" / "mp4" / "*" → accept
+# - Others (pdf / image / audio, etc.) → Reject, to prevent accidentally hitting the extension
 #
-# ⚠️ DrissionPage 的 run_js 会自动把代码包成 `function(){<代码>}` 执行,
-#    所以必须用顶层 return 语句, 严禁用 (function(){...})() IIFE — 那样返回值会丢失变成 None。
+# DrissionPage's run_js automatically wraps the code in `function(){<code>}` for execution.
+# Therefore, the top-level return statement must be used, and (function(){...})() IIFE is strictly prohibited - otherwise the return value will be lost and become None.
 _DEEP_VIDEO_FILE_INPUT_JS = r"""
 function isVideoInput(inp) {
   var acc = (inp.getAttribute('accept') || '').toLowerCase().trim();
@@ -65,12 +65,12 @@ return deep(document);
 """
 
 
-# 上传对话框就绪探测 JS。
-# 实测: ytcp-uploads-dialog 本身高度为 0 (内部用 tp-yt-paper-dialog 走 position:fixed),
-# 用 offsetParent / getBoundingClientRect 判断都不可靠。
-# 真正可靠的"对话框就绪"标志是: ytcp-uploads-file-picker 已挂载 + 顶层 file input 已存在。
+# Upload dialog readiness detection JS.
+# Actual measurement: ytcp-uploads-dialog itself has a height of 0 (internally, tp-yt-paper-dialog is used to implement position:fixed),
+# Judgment using offsetParent / getBoundingClientRect is not reliable.
+# A really reliable "dialog ready" sign is: ytcp-uploads-file-picker is mounted + the top-level file input exists.
 #
-# ⚠️ 同上, 严禁用 IIFE, 必须用顶层 return。
+# ⚠️ Same as above, IIFE is strictly prohibited and top-level return must be used.
 _DIALOG_PROBE_JS = r"""
 var picker = document.querySelector('ytcp-uploads-file-picker');
 if (!picker) return false;
@@ -81,7 +81,7 @@ return !!input;
 
 
 def _extract_channel_id(url):
-    """从 studio.youtube.com URL 中提取 channel_id (UCxxxxxxxx)。"""
+    """Extract channel_id (UCxxxxxxxx) from studio.youtube.com URL."""
     if not url:
         return None
     m = re.search(r'/channel/([^/?#]+)', url)
@@ -89,53 +89,53 @@ def _extract_channel_id(url):
 
 
 def ensure_upload_dialog_open(page, timeout=15):
-    """确保 YouTube Studio 的视频上传对话框已打开。
+    """Make sure YouTube Studio's video upload dialog is open.
 
-    实测最稳定的策略 (优于点击 #upload-icon, 因为图标点击有时不弹对话框):
-      1. 强制进 studio 主页拿 channel_id (即使当前已在 studio 域名也要重进, 防止陈旧 SPA 状态)
-      2. URL 直跳 `studio.youtube.com/channel/<id>/videos/upload?d=ud`
-      3. SPA 挂载等待 + polling 探测 <ytcp-uploads-dialog>
+    The most stable strategy tested (better than clicking #upload-icon, because clicking on the icon sometimes does not pop up the dialog box):
+      1. Force to enter the studio homepage to get the channel_id (even if you are currently in the studio domain name, you must re-enter to prevent stale SPA status)
+      2. URL jump `studio.youtube.com/channel/<id>/videos/upload?d=ud`
+      3. SPA mounting waiting + polling detection <ytcp-uploads-dialog>
 
-    返回 True / False。
+    Return True/False.
     """
-    # popup_guard (browser_manager._POPUP_GUARD_JS) 的 MutationObserver 会监听新加的 [role="dialog"]。
-    # 它在 callback 首行检查 `if (!window.__popupGuard) return;`,
-    # 所以设为 false 即可让它停止干预。
-    # SPA 路由切换 (page.get) 可能不会刷新 JS 上下文, 必须显式停用。
+    # The MutationObserver of popup_guard (browser_manager._POPUP_GUARD_JS) will listen to the newly added [role="dialog"].
+    # It checks `if (!window.__popupGuard) return;`, in the first line of callback
+    # So setting it to false will stop it from interfering.
+    # SPA route switching (page.get) may not refresh the JS context and must be explicitly disabled.
     try:
         page.run_js("window.__popupGuard = false;")
     except Exception:
         pass
 
     try:
-        # 必须先进 channel 主页, 即使当前已经在 studio.youtube.com 也要刷新一次,
-        # 因为 login/page_check/cleanup 步骤之后页面状态可能残留 (popup_guard JS / 残留 dialog)
-        # 重新 get 一次能让 channel_id 提取拿到最新值, 也能丢弃旧 SPA 状态。
-        logger.info("  🔄 重置到 studio 主页...")
+        # The channel homepage must be entered first, even if it is already on studio.youtube.com, it must be refreshed.
+        # Because the page status may remain after the login/page_check/cleanup step (popup_guard JS / residual dialog)
+        # Re-getting allows channel_id to extract the latest value, and also discards the old SPA state.
+        logger.info("  🔄 Reset to studio homepage...")
         page.get('https://studio.youtube.com/')
         page.wait.doc_loaded(timeout=15)
-        time.sleep(0.8)  # SPA 路由完成
+        time.sleep(0.8)  # SPA routing completed
 
         channel_id = _extract_channel_id(page.url)
         if channel_id:
             upload_url = f'https://studio.youtube.com/channel/{channel_id}/videos/upload?d=ud'
         else:
             upload_url = 'https://studio.youtube.com/?d=ud'
-            logger.info(f"  ⚠️ 未从 {page.url} 解析到 channel_id, 用兜底 URL")
+            logger.info(f"  ⚠️ The channel_id is not resolved from {page.url}, use a cryptic URL")
 
-        logger.info(f"  🎯 直跳上传 URL: {upload_url}")
+        logger.info(f"  🎯 Direct upload URL: {upload_url}")
         page.get(upload_url)
         page.wait.doc_loaded(timeout=15)
-        time.sleep(1.5)  # 给 ytcp-uploads-dialog 挂载时间
+        time.sleep(1.5)  # Give ytcp-uploads-dialog time to mount
     except Exception as e:
-        logger.warning(f"  ⚠️ URL 直跳异常: {e}")
+        logger.warning(f"  ⚠️ URL jump exception: {e}")
 
     deadline = time.time() + timeout
     last_url_log = 0.0
     while time.time() < deadline:
         try:
             if page.run_js(_DIALOG_PROBE_JS):
-                logger.info("  ✅ 上传对话框已打开 (ytcp-uploads-dialog)")
+                logger.info("  ✅ Upload dialog is open (ytcp-uploads-dialog)")
                 return True
             now = time.time()
             if now - last_url_log >= 3.0:
@@ -144,23 +144,23 @@ def ensure_upload_dialog_open(page, timeout=15):
                     cur_url = page.url or ""
                 except Exception:
                     pass
-                logger.info(f"  ⏳ 等待对话框... (当前 url: {cur_url[:90]})")
+                logger.info(f"  ⏳ Waiting dialog... (Current url: {cur_url[:90]})")
                 last_url_log = now
         except Exception as e:
-            logger.debug(f"  探测异常: {e}")
+            logger.debug(f"  Detection anomaly: {e}")
         time.sleep(0.5)
 
-    logger.warning(f"  ⚠️ {timeout}s 内对话框未出现")
+    logger.warning(f"  ⚠️ The dialog box did not appear in {timeout}s")
     return False
 
 
 def find_file_input_deep(page, timeout=15):
-    """穿透所有 Shadow DOM 查找 YouTube 视频上传专用的 <input type="file">。
+    """Penetrate all Shadow DOM to find <input type="file"> specific to YouTube video uploads.
 
-    带 accept 过滤: 排除浏览器扩展 (Glarity PDF / 翻译插件) 注入的非视频 file input,
-    防止注入文件时被错误目标接收导致失败。
+    With accept filter: exclude non-video file input injected by browser extension (Glarity PDF/Translation plugin),
+    Prevent the injection file from being received by the wrong target and causing failure.
 
-    返回 ChromiumElement 或 None。
+    Returns ChromiumElement or None.
     """
     deadline = time.time() + timeout
     last_err = None
@@ -173,15 +173,15 @@ def find_file_input_deep(page, timeout=15):
             last_err = e
         time.sleep(0.5)
     if last_err is not None:
-        logger.debug(f"  Shadow DOM 深度查找异常: {last_err}")
+        logger.debug(f"  Shadow DOM depth search exception: {last_err}")
     return None
 
 
 def _writeback_from_fallback(el, platform, key):
-    """当上传器自身的 fallback 逻辑找到元素后，将有效选择器回写到 button_config.json。
+    """When the uploader's own fallback logic finds the element, the valid selector is written back to button_config.json.
 
-    目前只在 YouTube 的 form_fill 索引模式下使用，迁出共享区是为了平台代码各自独立。
-    若未来其他平台也需要，再抽到 tools/。
+    Currently only used in YouTube's form_fill index mode, the move out of the Community Zone is to ensure that the platform code is independent.
+    If other platforms also need it in the future, extract tools/.
     """
     try:
         tag = (el.tag or "").lower()
@@ -196,20 +196,20 @@ def _writeback_from_fallback(el, platform, key):
         sel = f'@aria-label={aria}'
     if sel:
         ok, msg = add_selector(platform, key, sel)
-        if ok and "已将" in msg:
-            logger.info(f"  📝 fallback 回写: {platform}.{key} ← {sel}")
+        if ok and "already" in msg.lower():
+            logger.info(f"  📝 fallback Write back: {platform}.{key} ← {sel}")
 
 
 def _set_youtube_schedule(page, schedule_str):
-    """设置 YouTube 定时发布（格式: 'YYYY-MM-DD HH:MM'）。
+    """Set YouTube scheduled publishing (format: 'YYYY-MM-DD HH:MM').
 
-    使用 recipe 配方系统（三层兜底）：
-    - Tier 1: 按 state_patterns.json → youtube.schedule_recipe 执行
-    - Tier 2: 选择器失败时启发式发现替代元素，成功后自动写回配方
-    - Tier 3: 全部失败时输出增强 DIAG，交给 Agent 介入
+    Use the recipe recipe system (three layers of coverage):
+    - Tier 1: Execute by state_patterns.json → youtube.schedule_recipe
+    - Tier 2: Heuristically discovers alternative elements when the selector fails, and automatically writes back the recipe when successful.
+    - Tier 3: When all fails, enhanced DIAG is output and handed over to Agent for intervention.
 
-    返回 (success: bool, diag: dict|None)。
-    diag 含 failed_step / semantic_hint / recipe_key，供 report_failure 透传。
+    Return (success: bool, diag: dict|None).
+    diag contains failed_step / semantic_hint / recipe_key for transparent transmission of report_failure.
     """
     def _format_diag(reason):
         return {
@@ -220,30 +220,30 @@ def _set_youtube_schedule(page, schedule_str):
 
     parts = schedule_str.strip().split(' ')
     if len(parts) != 2:
-        logger.warning(f"  ⚠️ 定时格式错误（需要 'YYYY-MM-DD HH:MM'）: {schedule_str}")
-        return False, _format_diag(f"schedule_str 格式错误: {schedule_str}")
+        logger.warning(f"  ⚠️ Timing format error (requires 'YYYY-MM-DD HH:MM'): {schedule_str}")
+        return False, _format_diag(f"schedule_str format error: {schedule_str}")
     date_str, time_str = parts
     date_parts = date_str.split('-')
     if len(date_parts) != 3:
-        logger.warning(f"  ⚠️ 日期格式错误（需要 'YYYY-MM-DD'）: {date_str}")
-        return False, _format_diag(f"date_str 格式错误: {date_str}")
+        logger.warning(f"  ⚠️ Wrong date format (requires 'YYYY-MM-DD'): {date_str}")
+        return False, _format_diag(f"date_str format error: {date_str}")
 
     try:
         target_day = str(int(date_parts[2]))
     except ValueError:
-        logger.warning(f"  ⚠️ 日期中的日无法解析为数字: {date_str}")
-        return False, _format_diag(f"date_str 日字段非数字: {date_str}")
+        logger.warning(f"  ⚠️ The day in the date cannot be parsed as a number: {date_str}")
+        return False, _format_diag(f"date_str date field non-numeric: {date_str}")
 
     time_parts = time_str.split(':')
     if len(time_parts) != 2:
-        logger.warning(f"  ⚠️ 时间格式错误（需要 'HH:MM'）: {time_str}")
-        return False, _format_diag(f"time_str 格式错误: {time_str}")
+        logger.warning(f"  ⚠️ Incorrect time format (requires 'HH:MM'): {time_str}")
+        return False, _format_diag(f"time_str format error: {time_str}")
     try:
         int(time_parts[0])
         int(time_parts[1])
     except ValueError:
-        logger.warning(f"  ⚠️ 时间中包含非数字字符: {time_str}")
-        return False, _format_diag(f"time_str 含非数字: {time_str}")
+        logger.warning(f"  ⚠️ The time contains non-numeric characters: {time_str}")
+        return False, _format_diag(f"time_str contains non-digits: {time_str}")
 
     variables = {
         "date": date_str,
@@ -254,7 +254,7 @@ def _set_youtube_schedule(page, schedule_str):
     success, failed_step, hint = run_recipe(page, "youtube", "schedule_recipe", variables)
 
     if success:
-        # 通过 CDP 逐个聚焦 + Tab 让 YouTube Polymer 组件完成时间验证（所有事件 isTrusted=true）
+        # Let the YouTube Polymer component complete time verification through CDP focus + Tab (all events isTrusted=true)
         input_rects = page.run_js("""
             var inputs = document.querySelectorAll('#second-container input, #time-of-day-container input');
             var rects = [];
@@ -271,9 +271,9 @@ def _set_youtube_schedule(page, schedule_str):
                 cdp_press_key(page, 'Tab', 'Tab', 9)
                 time.sleep(0.15)
         time.sleep(1)
-        logger.info(f"  ✅ YouTube 定时发布: {schedule_str}")
+        logger.info(f"  ✅ YouTube scheduled release: {schedule_str}")
         return True, None
-    logger.warning(f"  ⚠️ YouTube 定时发布失败 (step={failed_step}, hint={hint})")
+    logger.warning(f"  ⚠️ YouTube scheduled publishing failed (step={failed_step}, hint={hint})")
     return False, {
         "failed_step": failed_step or "",
         "semantic_hint": hint or "",

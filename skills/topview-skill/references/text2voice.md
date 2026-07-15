@@ -42,17 +42,6 @@ python {baseDir}/scripts/text2voice.py run \
 
 ### With Pronunciation Rules
 
-Recommended cross-platform form:
-
-```bash
-python {baseDir}/scripts/text2voice.py run \
-  --text "行不行？你行行行。" \
-  --voice-id voice-888 \
-  --pron-rules 行=xing 重=chong
-```
-
-Legacy JSON form:
-
 ```bash
 python {baseDir}/scripts/text2voice.py run \
   --text "行不行？你行行行。" \
@@ -93,7 +82,7 @@ python {baseDir}/scripts/text2voice.py query --task-id "$T2"
 | `--speed FLOAT` | Speech speed (1.0 = normal) |
 | `--emotion NAME` | Emotion: `happy`, `sad`, `angry`, etc. |
 | `--origin-voice-file ID` | Original voice file fileId or local path |
-| `--pron-rules` | Recommended: `行=xing 重=chong`; legacy JSON array still supported |
+| `--pron-rules JSON` | Pronunciation rules: `[{"oldStr":"行","newStr":"xing"}]` |
 | `--board-id ID` | Board ID |
 | `--notice-url URL` | Webhook URL |
 
@@ -104,7 +93,7 @@ python {baseDir}/scripts/text2voice.py query --task-id "$T2"
 | `--timeout SECS` | Max polling time (default: 300) |
 | `--interval SECS` | Polling interval (default: 3) |
 | `--output FILE` | Download audio to local path |
-| `--json` | Full JSON response |
+| `--json` | Full JSON response (not used by default; only when the user explicitly requests raw JSON output) |
 | `-q, --quiet` | Suppress status messages |
 
 ## Cost

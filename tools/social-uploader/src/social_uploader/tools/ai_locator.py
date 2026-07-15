@@ -1,9 +1,9 @@
-"""AI 导航器 — 基于 AgentQL 的高稳定性语义定位类。
+"""AI Navigator — a highly stable semantic positioning class based on AgentQL.
 
-通过结构化语义查询（container + target）定位页面元素，
-包含页面预热、坐标校准、视觉校验等增强机制。
+Locate page elements through structured semantic query (container + target),
+Contains enhancement mechanisms such as page warm-up, coordinate calibration, and visual verification.
 
-AgentQL API Key 未配置时静默降级，返回 (None, None)。
+AgentQL API Key is silently degraded when not configured and returns (None, None).
 """
 
 import logging
@@ -15,19 +15,19 @@ _MAX_RETRIES = 2
 
 
 class UltimateLocator:
-    """高稳定性 AI 元素定位器。
+    """High stability AI element locator.
 
-    工作流程：
-    1. prepare_page() — 预热页面，激活懒加载，清理弹窗
-    2. find_element(query_dict, platform) — 结构化语义查询
-    3. _verify_clickable(element) — 视觉校验 + 坐标校准
+    Workflow:
+    1. prepare_page() — Preheat the page, activate lazy loading, and clear pop-ups
+    2. find_element(query_dict, platform) — structured semantic query
+    3. _verify_clickable(element) — visual verification + coordinate calibration
     """
 
     def __init__(self, page):
         self.page = page
 
     def prepare_page(self):
-        """预热页面：滚动激活懒加载 + 等待 DOM 稳定 + 清理弹窗。"""
+        """Warm up page: scroll to activate lazy loading + wait for DOM to stabilize + clean up pop-ups."""
         try:
             self.page.scroll.to_location(0, 500)
             time.sleep(0.3)
@@ -50,7 +50,7 @@ class UltimateLocator:
             pass
 
     def _get_dpr(self):
-        """获取 window.devicePixelRatio，用于坐标校准。每次实时获取，不缓存。"""
+        """Get window.devicePixelRatio, used for coordinate calibration. Get it in real time every time without caching."""
         try:
             dpr = self.page.run_js("return window.devicePixelRatio || 1;")
             return float(dpr) if dpr else 1.0
@@ -58,14 +58,14 @@ class UltimateLocator:
             return 1.0
 
     def find_element(self, query_dict, platform=""):
-        """结构化语义查询入口。
+        """Structured semantic query entry.
 
         Args:
             query_dict: {"container": "...", "target": "..."}
-            platform: 平台名（tiktok/instagram/youtube）
+            platform: platform name (tiktok/instagram/youtube)
 
         Returns:
-            (element, selector) 或 (None, None)
+            (element, selector) or (None, None)
         """
         try:
             from social_uploader.tools.agentql_client import (
@@ -76,11 +76,11 @@ class UltimateLocator:
                 _API_KEY,
             )
         except ImportError:
-            logger.debug("agentql_client 不可用，跳过 AI 定位")
+            logger.debug("agentql_client is not available, skip AI positioning")
             return None, None
 
         if not _API_KEY:
-            logger.debug("AGENTQL_API_KEY 未设置，跳过 AI 定位")
+            logger.debug("AGENTQL_API_KEY is not set, skip AI positioning")
             return None, None
 
         container = query_dict.get("container", "page")
@@ -92,7 +92,7 @@ class UltimateLocator:
 
         for attempt in range(_MAX_RETRIES):
             if attempt > 0:
-                logger.info(f"  🔄 AI 定位重试 ({attempt + 1}/{_MAX_RETRIES})...")
+                logger.info(f"  🔄 AI positioning retry ({attempt + 1}/{_MAX_RETRIES})...")
                 self.prepare_page()
 
             context_hint = ""
@@ -101,19 +101,19 @@ class UltimateLocator:
 
             html = _extract_relevant_html(self.page, context_hint)
             if not html:
-                logger.debug("无法提取页面 HTML")
+                logger.debug("Unable to extract page HTML")
                 continue
 
             logger.info(
-                f"  🧠 AI 语义定位: '{target}' in '{container}' "
+                f"  🧠 AI semantic positioning: '{target}' in '{container}'"
                 f"(HTML {len(html) // 1024}KB)"
             )
             candidates = _agentql_identify(html, description, platform)
             if not candidates:
-                logger.info("  🧠 AgentQL 未返回有效候选")
+                logger.info("  🧠 AgentQL did not return valid candidates")
                 continue
 
-            logger.info(f"  🧠 获得 {len(candidates)} 个候选: {candidates}")
+            logger.info(f"  🧠 Get {len(candidates)} candidates: {candidates}")
 
             for sel in candidates:
                 try:
@@ -123,21 +123,21 @@ class UltimateLocator:
                     if not _is_safe_element(el, target):
                         continue
                     if not self._verify_clickable(el):
-                        logger.debug(f"    候选 {sel} 不可点击，跳过")
+                        logger.debug(f"    Candidate {sel} not clickable, skip")
                         continue
 
                     best = _extract_best_selector(self.page, el)
                     final_sel = best if best else sel
-                    logger.info(f"  🧠 AI 定位成功: {final_sel}")
+                    logger.info(f"  🧠 AI positioning successful: {final_sel}")
                     return el, final_sel
                 except Exception:
                     continue
 
-        logger.info("  🧠 AI 定位未找到可用元素")
+        logger.info("  🧠 AI positioning did not find available elements")
         return None, None
 
     def _verify_clickable(self, element):
-        """视觉校验：检查元素可见性 + 鼠标移动验证。"""
+        """Visual validation: check element visibility + mouse movement validation."""
         try:
             if not element.states.has_rect:
                 return False

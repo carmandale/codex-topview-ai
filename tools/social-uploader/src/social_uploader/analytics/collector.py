@@ -1,14 +1,14 @@
-"""数据采集层 — 通过 OpenCLI 适配器采集各平台创作者数据看板。
+"""Data collection layer - collects data dashboards from creators on each platform through the OpenCLI adapter.
 
-技术方案：
-  调用 `opencli <平台> creator-stats [参数] --format json` 获取结构化数据。
-  OpenCLI 负责浏览器操控、页面导航、Cookie 认证、DOM/API 数据提取。
-  本模块只负责：调用命令 → 解析 JSON → 转换为统一格式。
+Technical solution:
+  Call `opencli <平台> creator-stats [参数] --format json` to obtain structured data.
+  OpenCLI is responsible for browser control, page navigation, cookie authentication, and DOM/API data extraction.
+  This module is only responsible for: calling commands → parsing JSON → converting to a unified format.
 
-支持的平台：
-  - 有 creator-stats 适配器的平台（youtube, tiktok, instagram 等）
-  - 有其他 stats 命令的平台（douyin 的 stats 命令）
-  - 新平台只需在 ~/.opencli/clis/<平台>/ 下添加 JS 适配器即可
+Supported platforms:
+  - Platforms with creator-stats adapter (youtube, tiktok, instagram, etc.)
+  - Platforms with other stats commands (douyin's stats command)
+  - For new platforms, just add the JS adapter under ~/.opencli/clis/<platform>/
 """
 
 import json
@@ -33,7 +33,7 @@ _NUM_RE = re.compile(r"[\d,]+\.?\d*")
 
 
 def _parse_number(text: str) -> float | None:
-    """从文本中提取数字，支持 K/M/B/万/亿 后缀和逗号分隔。"""
+    """Extract numbers from text, supporting K/M/B/Ten Thousand/Billion suffixes and comma separation."""
     if not text:
         return None
     text = text.strip().replace("\n", "").replace("\u00a0", "")
@@ -66,7 +66,7 @@ def _parse_number(text: str) -> float | None:
 
 
 def _find_opencli() -> str | None:
-    """查找 opencli 可执行文件路径。"""
+    """Find the opencli executable path."""
     path = shutil.which("opencli")
     if path:
         return path
@@ -80,12 +80,12 @@ _YT_CHANNEL_RE = re.compile(r"UC[\w-]{22}")
 
 
 def _auto_detect_youtube_channel() -> str | None:
-    """通过 Chrome 调试端口自动获取当前登录用户的 YouTube 频道 ID。
+    """Automatically obtain the YouTube channel ID of the currently logged in user via the Chrome debug port.
 
-    检测策略（按优先级）:
-      1. 扫描已打开的标签页 URL 提取 UCxxx
-      2. 通过 CDP 主动导航到 studio.youtube.com，等待重定向后从 URL 提取
-      3. 从 YouTube Studio 页面 DOM 提取 channel-id 属性
+    Detection strategy (by priority):
+      1. Scan the opened tab URL to extract UCxxx
+      2. Actively navigate to studio.youtube.com through CDP, wait for redirection and then extract from the URL
+      3. Extract channel-id attribute from YouTube Studio page DOM
     """
     import urllib.request
     import urllib.error
@@ -94,7 +94,7 @@ def _auto_detect_youtube_channel() -> str | None:
         raw = urllib.request.urlopen("http://localhost:9222/json", timeout=5).read()
         tabs = json.loads(raw)
     except (urllib.error.URLError, OSError, json.JSONDecodeError):
-        logger.debug("  YouTube 频道自动检测: 无法连接 Chrome 调试端口 9222")
+        logger.debug("  YouTube channel auto-detection: Unable to connect to Chrome debug port 9222")
         return None
 
     for tab in tabs:
@@ -102,7 +102,7 @@ def _auto_detect_youtube_channel() -> str | None:
         if "studio.youtube.com" in url:
             m = _YT_CHANNEL_RE.search(url)
             if m:
-                logger.debug(f"  从 YouTube Studio 标签页检测到频道")
+                logger.debug(f"  Channel detected from YouTube Studio tab")
                 return m.group()
 
     for tab in tabs:
@@ -110,19 +110,19 @@ def _auto_detect_youtube_channel() -> str | None:
         if "youtube.com" in url:
             m = _YT_CHANNEL_RE.search(url)
             if m:
-                logger.debug(f"  从 YouTube 标签页检测到频道")
+                logger.debug(f"  Channel detected from YouTube tab")
                 return m.group()
 
     channel = _detect_youtube_channel_via_cdp(tabs)
     if channel:
         return channel
 
-    logger.warning("  ⚠️ YouTube 频道自动检测失败: 未能从浏览器会话中获取频道 ID")
+    logger.warning("  ⚠️ YouTube channel auto-detection failed: Failed to get channel ID from browser session")
     return None
 
 
 def _cdp_send(ws, method: str, params: dict | None = None, msg_id: int = 1) -> dict:
-    """发送 CDP 命令并等待对应 id 的响应，跳过中间的事件推送。"""
+    """Send the CDP command and wait for the response corresponding to the id, skipping the intermediate event push."""
     payload = {"id": msg_id, "method": method}
     if params:
         payload["params"] = params
@@ -135,10 +135,10 @@ def _cdp_send(ws, method: str, params: dict | None = None, msg_id: int = 1) -> d
 
 
 def _detect_youtube_channel_via_cdp(tabs: list[dict]) -> str | None:
-    """通过 CDP 新建标签页打开 YouTube Studio，等待重定向后提取频道 ID。
+    """Open YouTube Studio via CDP in a new tab and wait for the redirect to extract the channel ID.
 
-    YouTube Studio 在用户已登录时会重定向到 /channel/UCxxx/...，
-    从重定向后的 URL 即可提取频道 ID。检测完成后自动关闭临时标签页。
+    YouTube Studio redirects to /channel/UCxxx/... when the user is logged in,
+    The channel ID can be extracted from the redirected URL. The temporary tab page will be automatically closed after the detection is completed.
     """
     import time
     import urllib.request
@@ -147,7 +147,7 @@ def _detect_youtube_channel_via_cdp(tabs: list[dict]) -> str | None:
     try:
         import websocket
     except ImportError:
-        logger.debug("  websocket-client 未安装，跳过 CDP 检测")
+        logger.debug("  websocket-client is not installed, skipping CDP detection")
         return None
 
     tab_id = None
@@ -155,7 +155,7 @@ def _detect_youtube_channel_via_cdp(tabs: list[dict]) -> str | None:
     channel_id = None
 
     try:
-        logger.debug("  正在通过浏览器自动检测 YouTube 频道...")
+        logger.debug("  Automatically detecting YouTube channels via browser...")
         req = urllib.request.Request(
             "http://localhost:9222/json/new?https://studio.youtube.com",
             method="PUT",
@@ -165,7 +165,7 @@ def _detect_youtube_channel_via_cdp(tabs: list[dict]) -> str | None:
         tab_id = new_tab.get("id")
         ws_url = new_tab.get("webSocketDebuggerUrl")
         if not ws_url:
-            logger.debug("  新标签页缺少 webSocketDebuggerUrl")
+            logger.debug("  New tab page is missing webSocketDebuggerUrl")
             return None
 
         ws = websocket.create_connection(ws_url, timeout=15)
@@ -178,7 +178,7 @@ def _detect_youtube_channel_via_cdp(tabs: list[dict]) -> str | None:
             m = _YT_CHANNEL_RE.search(url)
             if m:
                 channel_id = m.group()
-                logger.debug(f"  从 YouTube Studio 重定向检测到频道")
+                logger.debug(f"  Channel detected from YouTube Studio redirect")
                 break
 
         if not channel_id:
@@ -192,11 +192,11 @@ def _detect_youtube_channel_via_cdp(tabs: list[dict]) -> str | None:
             val = resp.get("result", {}).get("result", {}).get("value", "")
             if val and _YT_CHANNEL_RE.match(val):
                 channel_id = val
-                logger.debug(f"  从 YouTube Studio DOM 检测到频道")
+                logger.debug(f"  Channel detected from YouTube Studio DOM")
     except (urllib.error.URLError, OSError) as e:
-        logger.debug(f"  CDP 新标签页创建失败: {e}")
+        logger.debug(f"  CDP new tab page creation failed: {e}")
     except Exception as e:
-        logger.debug(f"  CDP 检测异常: {e}")
+        logger.debug(f"  CDP detection exception: {e}")
     finally:
         if ws:
             try:
@@ -216,13 +216,13 @@ def _detect_youtube_channel_via_cdp(tabs: list[dict]) -> str | None:
 
 
 def _run_opencli(platform: str, account_arg: str | None) -> dict | None:
-    """调用 opencli <平台> <命令> [参数] --format json 并返回解析后的 JSON。
+    """Calls opencli <platform> <command> [parameters] --format json and returns parsed JSON.
 
-    返回 None 表示命令失败或 opencli 不可用。
+    Returning None indicates that the command failed or opencli is unavailable.
     """
     opencli = _find_opencli()
     if not opencli:
-        logger.error("  ❌ 未找到 opencli 命令，请确认已安装: npm install -g @jackwener/opencli")
+        logger.error("  ❌ The opencli command was not found, please confirm it is installed: npm install -g @jackwener/opencli")
         return None
 
     spec = _COMMAND_MAP.get(platform)
@@ -236,7 +236,7 @@ def _run_opencli(platform: str, account_arg: str | None) -> dict | None:
 
     timeout = _OPENCLI_TIMEOUT_YOUTUBE if platform == "youtube" else _OPENCLI_TIMEOUT
     safe_cmd = [c if not _YT_CHANNEL_RE.search(c) else "[CHANNEL_ID]" for c in cmd]
-    logger.info(f"  🔧 执行: {' '.join(safe_cmd)}")
+    logger.info(f"  🔧 Execution: {' '.join(safe_cmd)}")
     try:
         result = subprocess.run(
             cmd,
@@ -245,28 +245,28 @@ def _run_opencli(platform: str, account_arg: str | None) -> dict | None:
             timeout=timeout,
         )
         if result.returncode == 77:
-            logger.error(f"  ❌ {platform}: 未登录目标网站（exit code 77）")
+            logger.error(f"  ❌ {platform}: Not logged in to the target website (exit code 77)")
             return None
         if result.returncode == 69:
-            logger.error(f"  ❌ {platform}: Browser Bridge 未连接（exit code 69），请运行 opencli doctor")
+            logger.error(f"  ❌ {platform}: Browser Bridge is not connected (exit code 69), please run opencli doctor")
             return None
         if result.returncode != 0:
             stderr = result.stderr.strip()[:200] if result.stderr else ""
-            logger.error(f"  ❌ {platform}: opencli 退出码 {result.returncode}  {stderr}")
+            logger.error(f"  ❌ {platform}: opencli exit code {result.returncode} {stderr}")
             return None
 
         stdout = result.stdout.strip()
         if not stdout:
-            logger.warning(f"  ⚠️ {platform}: opencli 返回空输出")
+            logger.warning(f"  ⚠️ {platform}: opencli returns empty output")
             return None
 
         return json.loads(stdout)
     except subprocess.TimeoutExpired:
-        logger.error(f"  ❌ {platform}: opencli 超时 ({_OPENCLI_TIMEOUT}s)")
+        logger.error(f"  ❌ {platform}: opencli timeout ({_OPENCLI_TIMEOUT}s)")
         return None
     except json.JSONDecodeError as e:
-        logger.error(f"  ❌ {platform}: JSON 解析失败: {e}")
-        logger.debug(f"  原始输出前 500 字符: {result.stdout[:500] if result.stdout else '(空)'}")
+        logger.error(f"  ❌ {platform}: JSON parsing failed: {e}")
+        logger.debug(f"  First 500 characters of raw output: {result.stdout[:500] if result.stdout else '(空)'}")
         return None
     except Exception as e:
         logger.error(f"  ❌ {platform}: {e}")
@@ -274,13 +274,13 @@ def _run_opencli(platform: str, account_arg: str | None) -> dict | None:
 
 
 def _normalize_opencli_output(platform: str, raw_data) -> dict:
-    """将 opencli 的 JSON 输出转换为统一的内部格式。
+    """Convert opencli's JSON output to a unified internal format.
 
-    支持两种输出格式：
-      旧格式 (flat):  [{metric, value, trend}, ...]
-      新格式 (per-video): [{video, tab, metric, value}, ...]  ← YouTube 逐视频采集
+    Two output formats are supported:
+      Old format (flat): [{metric, value, trend}, ...]
+      New format (per-video): [{video, tab, metric, value}, ...] ← YouTube video-by-video capture
 
-    内部格式: {"account_metrics": {key: number}, "video_metrics": [...]}
+    Internal format: {"account_metrics": {key: number}, "video_metrics": [...]}
     """
     rows = raw_data if isinstance(raw_data, list) else []
     if not rows:
@@ -293,15 +293,15 @@ def _normalize_opencli_output(platform: str, raw_data) -> dict:
 
 
 def _normalize_flat_output(rows: list) -> dict:
-    """处理统一格式: [{metric, value, trend}, ...]
+    """Processing unified format: [{metric, value, trend}, ...]
 
-    支持分段：
-      - 账号级指标（顶部，无分隔符前的行）
-      - "--- Top Videos ---" / "--- 单帖数据 ---" 等分隔符后是视频/帖子级数据
-      - "--- 近期内容汇总 ---" 后是汇总统计
-      - "--- 分析数据 ---" 后是平台分析指标
+    Segmentation is supported:
+      - Account level metrics (top, row before separator)
+      - "--- Top Videos ---" / "--- Single post data ---" and other delimiters are followed by video/post level data
+      - "--- Summary of recent content ---" followed by summary statistics
+      - "---Analysis data ---" is followed by platform analysis indicators
 
-    身份字段（用户名、账号类型等）不丢弃，存入 account_identity。
+    Identity fields (user name, account type, etc.) are not discarded and stored in account_identity.
     """
     account_metrics = {}
     video_metrics = []
@@ -316,8 +316,12 @@ def _normalize_flat_output(rows: list) -> dict:
         "info": "info",
     }
 
-    _SKIP_METRICS = {"热门帖子", "人群画像", "粉丝画像", "性别分布", "年龄分布", "地区分布",
-                     "粉丝性别", "粉丝年龄", "粉丝地区"}
+    _SKIP_METRICS = {
+        "Popular posts", "Audience profile", "Follower profile", "Gender distribution",
+        "Age distribution", "Regional distribution", "Follower gender", "Follower age",
+        "Follower region", "热门帖子", "人群画像", "粉丝画像", "性别分布",
+        "年龄分布", "地区分布", "粉丝性别", "粉丝年龄", "粉丝地区",
+    }
 
     for row in rows:
         if not isinstance(row, dict):
@@ -328,14 +332,15 @@ def _normalize_flat_output(rows: list) -> dict:
 
         if "---" in str(metric):
             val_lower = str(value).lower()
-            if "top video" in val_lower or "单帖" in val_lower or "top content" in val_lower:
+            if "top video" in val_lower or "single post" in val_lower or "top content" in val_lower or "单帖" in str(value):
                 section = "videos"
-            elif "近期内容" in val_lower or ("content" in val_lower and "top" not in val_lower):
+            elif "recent content" in val_lower or "近期内容" in str(value) or ("content" in val_lower and "top" not in val_lower):
                 section = "summary"
-            elif ("分析数据" in val_lower or "analytics" in val_lower
-                  or "overview" in val_lower or "概览" in val_lower
-                  or "viewers" in val_lower or "观众" in val_lower
-                  or "followers" in val_lower or "粉丝" in val_lower):
+            elif ("analyze data" in val_lower or "analytics" in val_lower
+                  or "overview" in val_lower or "viewers" in val_lower
+                  or "audience" in val_lower or "followers" in val_lower
+                  or "fan" in val_lower
+                  or any(label in str(value) for label in ("分析数据", "概览", "观众", "粉丝"))):
                 section = "analytics"
             else:
                 section = "other"
@@ -375,9 +380,9 @@ def _normalize_flat_output(rows: list) -> dict:
 
 
 def _normalize_per_video_output(rows: list) -> dict:
-    """处理逐视频格式: [{video, tab, metric, value}, ...]
+    """Process video-by-video format: [{video, tab, metric, value}, ...]
 
-    将每个视频的 4 个标签页指标合并，同时聚合出 account_metrics（取所有视频总和/均值）。
+    Combine the 4 tab page metrics of each video and aggregate account_metrics (take the sum/average of all videos).
     """
     from collections import OrderedDict
 
@@ -450,9 +455,9 @@ def _normalize_per_video_output(rows: list) -> dict:
 
 
 def _metric_to_key(metric_label: str) -> str:
-    """将 opencli 输出的中英文指标名转为规范化的 key。"""
+    """Convert the Chinese and English indicator names output by opencli into standardized keys."""
     mapping = {
-        # ── YouTube API 拦截版 ──
+        # ── YouTube API interception version ──
         "播放量 (views)": "views",
         "观看时长-小时 (watch time hours)": "watch_time_hours",
         "观看时长 (watch time hours)": "watch_time_hours",
@@ -463,7 +468,7 @@ def _metric_to_key(metric_label: str) -> str:
         "展示点击率 (CTR)": "ctr",
         "唯一观看者 (unique viewers)": "unique_viewers",
         "平均观看时长 (avg view duration)": "avg_view_duration",
-        # ── Instagram REST API 版 ──
+        # ── Instagram REST API version ──
         "粉丝数 (followers)": "followers",
         "关注数 (following)": "following",
         "帖子数 (posts)": "posts",
@@ -477,7 +482,7 @@ def _metric_to_key(metric_label: str) -> str:
         "保存 (saves)": "saves",
         "Reels 播放 (reels plays)": "reels_plays",
         "主页访问 (profile visits)": "profile_visits",
-        # ── TikTok Studio 版 ──
+        # ──TikTok Studio version──
         "获赞总数 (hearts)": "hearts",
         "视频数 (videos)": "video_count",
         "观看次数 (views)": "views",
@@ -487,7 +492,7 @@ def _metric_to_key(metric_label: str) -> str:
         "分享次数 (shares)": "shares",
         "预估奖励 (estimated_reward)": "estimated_reward",
         "新粉丝 (new_followers)": "new_followers",
-        # ── TikTok Studio 4-tab 新增 ──
+        # ── TikTok Studio 4-tab New ──
         "Video views (views)": "video_views",
         "Profile views (profile_views)": "profile_views",
         "Likes (likes)": "likes",
@@ -498,7 +503,7 @@ def _metric_to_key(metric_label: str) -> str:
         "New viewers (new_viewers)": "new_viewers",
         "Total followers (total_followers)": "total_followers",
         "Net followers (net_followers)": "net_followers",
-        # ── 通用 / 旧格式 ──
+        # ── Common / old format ──
         "点赞 (likes)": "likes",
         "评论 (comments)": "comments",
         "分享 (shares)": "shares",
@@ -506,7 +511,7 @@ def _metric_to_key(metric_label: str) -> str:
         "视频播放量 (video views)": "video_views",
         "主页访问 (profile views)": "profile_views",
         "粉丝变化 (followers)": "followers",
-        # ── YouTube 逐视频（中文 UI）──
+        # ── YouTube video by video (Chinese UI)──
         "观看次数": "views",
         "观看时长(小时)": "watch_time_hours",
         "订阅人数": "subscribers",
@@ -522,7 +527,7 @@ def _metric_to_key(metric_label: str) -> str:
         "回访观看者": "returning_viewers",
         "新观看者": "new_viewers",
         "非订阅者(%)": "non_subscriber_pct",
-        # ── YouTube 逐视频（英文 UI）──
+        # ── YouTube video by video (English UI)──
         "Views": "views",
         "Watch time (hours)": "watch_time_hours",
         "Subscribers": "subscribers",
@@ -548,42 +553,42 @@ def _metric_to_key(metric_label: str) -> str:
 
 
 def collect_platform(platform: str, account_arg: str | None) -> dict:
-    """采集单个平台的数据。
+    """Collect data from a single platform.
 
-    YouTube 频道 ID 通过 Chrome 调试端口从 YouTube Studio 页面自动获取，
-    本模块不缓存也不持久化频道 ID。
+    The YouTube channel ID is automatically obtained from the YouTube Studio page through the Chrome debug port,
+    This module does not cache or persist channel IDs.
 
-    返回统一格式 dict:
+    Return a unified format dict:
       {"account_metrics": {...}, "video_metrics": [...], "collection_method": "opencli"}
-    或带 error 字段的 dict。
+    or a dict with an error field.
     """
 
-    logger.info(f"📊 开始采集 {platform} 数据...")
+    logger.info(f"📊 Start collecting {platform} data...")
     raw = _run_opencli(platform, account_arg)
     if raw is None:
-        return {"error": f"opencli {platform} creator-stats 执行失败", "account_metrics": {}, "video_metrics": [], "account_identity": {}}
+        return {"error": f"opencli {platform} creator-stats execution failed", "account_metrics": {}, "video_metrics": [], "account_identity": {}}
 
     result = _normalize_opencli_output(platform, raw)
     if not result["account_metrics"] and not result["video_metrics"]:
-        logger.warning(f"  ⚠️ {platform}: 采集到 0 项指标，可能未登录或页面结构变化")
+        logger.warning(f"  ⚠️ {platform}: 0 indicators collected, may not be logged in or the page structure may have changed")
 
     return result
 
 
 def run_collect(account_platforms: dict, **_kwargs) -> dict[str, dict]:
-    """采集所有已配置平台的数据。供 CLI 调用。
+    """Collect data from all configured platforms. For CLI calls.
 
-    account_platforms 示例:
+    account_platforms example:
       {"youtube": "UCxxx", "tiktok": true, "instagram": true}
 
-    YouTube 频道 ID 会自动检测（从上传历史/浏览器会话），无需用户手动提供。
-    其他平台（TikTok / Instagram）仅需用户在 Chrome 中登录即可。
+    YouTube channel ID is automatically detected (from upload history/browser session) and does not need to be provided manually by the user.
+    Other platforms (TikTok / Instagram) only require the user to be logged in in Chrome.
 
-    返回 {"youtube": {...}, "tiktok": {...}, ...}
+    Return {"youtube": {...}, "tiktok": {...}, ...}
     """
     opencli = _find_opencli()
     if not opencli:
-        logger.error("❌ 未找到 opencli，请安装: npm install -g @jackwener/opencli")
+        logger.error("❌ opencli not found, please install: npm install -g @jackwener/opencli")
         return {}
 
     results = {}
@@ -603,13 +608,13 @@ def run_collect(account_platforms: dict, **_kwargs) -> dict[str, dict]:
             if data.get("error"):
                 logger.error(f"  ❌ {platform}: {data['error']}")
             else:
-                logger.info(f"  ✅ {platform} 数据采集完成")
+                logger.info(f"  ✅ {platform} data collection completed")
             results[platform] = data
         except Exception as e:
-            logger.error(f"  ❌ {platform} 采集异常: {e}")
+            logger.error(f"  ❌ {platform} Collection exception: {e}")
             results[platform] = {"error": str(e), "account_metrics": {}, "video_metrics": [], "account_identity": {}}
 
     if not results:
-        logger.warning("  ⚠️ 未配置任何平台账号，无数据可采集")
+        logger.warning("  ⚠️ No platform account is configured, no data can be collected")
 
     return results

@@ -1,11 +1,11 @@
-"""多账号管理 — 每个账号对应独立的 Chrome 用户数据目录，登录态互不干扰。
+"""Multi-account management - Each account corresponds to an independent Chrome user data directory, and the login status does not interfere with each other.
 
-存储结构：
-  ~/.social_uploader/accounts.json   — 账号注册表
-  ~/.social_uploader/chrome_profiles/<name>/  — 各账号的 Chrome 数据目录
+Storage structure:
+  ~/.social_uploader/accounts.json — Account registration form
+  ~/.social_uploader/chrome_profiles/<name>/ — Chrome data directory for each account
 
-向后兼容：
-  旧版唯一数据目录 ~/.chrome-social-upload 自动迁移为 "default" 账号。
+Backwards Compatibility:
+  The only data directory of the old version ~/.chrome-social-upload is automatically migrated to the "default" account.
 """
 
 import json
@@ -45,14 +45,14 @@ def _save_registry(reg: dict):
 
 
 def _migrate_legacy():
-    """将旧版 ~/.chrome-social-upload 迁移为 default 账号（仅执行一次）。"""
+    """Migrate the old version of ~/.chrome-social-upload to the default account (only execute once)."""
     reg = _load_registry()
     if DEFAULT_ACCOUNT in reg["accounts"]:
         return
     target = _PROFILES_DIR / DEFAULT_ACCOUNT
     if _LEGACY_DATA_DIR.exists() and not target.exists():
         shutil.copytree(str(_LEGACY_DATA_DIR), str(target), symlinks=True)
-        logger.info(f"  📦 已将旧数据目录迁移为 '{DEFAULT_ACCOUNT}' 账号")
+        logger.info(f"  📦 The old data directory has been migrated to the '{DEFAULT_ACCOUNT}' account")
     elif not target.exists():
         target.mkdir(parents=True, exist_ok=True)
     reg["accounts"][DEFAULT_ACCOUNT] = {
@@ -65,9 +65,9 @@ def _migrate_legacy():
 
 
 def get_data_dir(account: str | None = None) -> str:
-    """获取指定账号的 Chrome 数据目录路径。
+    """Get the Chrome data directory path of the specified account.
 
-    account=None 时使用上次使用的账号，都没有则自动迁移/创建 default。
+    When account=None, the last used account is used. If there is no account, default will be automatically migrated/created.
     """
     _migrate_legacy()
     reg = _load_registry()
@@ -77,8 +77,8 @@ def get_data_dir(account: str | None = None) -> str:
 
     if account not in reg["accounts"]:
         raise ValueError(
-            f"账号 '{account}' 不存在。可用账号: {', '.join(reg['accounts'].keys()) or '(无)'}\n"
-            f"用 `social-upload account add {account}` 创建。"
+            f"Account '{account}' does not exist. Available accounts: {', '.join(reg['accounts'].keys()) or '(none)'}\n"
+            f"Created with `social-upload account add {account}`."
         )
 
     reg["last_used"] = account
@@ -87,11 +87,11 @@ def get_data_dir(account: str | None = None) -> str:
 
 
 def add_account(name: str) -> tuple[bool, str]:
-    """注册新账号。返回 (成功, 消息)。"""
+    """Register a new account. return (success, message)."""
     _migrate_legacy()
     reg = _load_registry()
     if name in reg["accounts"]:
-        return False, f"账号 '{name}' 已存在"
+        return False, f"Account '{name}' already exists"
 
     data_dir = _PROFILES_DIR / name
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -104,12 +104,12 @@ def add_account(name: str) -> tuple[bool, str]:
 
 
 def remove_account(name: str, delete_data: bool = False) -> tuple[bool, str]:
-    """删除账号注册。delete_data=True 时同时删除 Chrome 数据目录。"""
+    """Delete account registration. When delete_data=True, the Chrome data directory is also deleted."""
     reg = _load_registry()
     if name not in reg["accounts"]:
-        return False, f"账号 '{name}' 不存在"
+        return False, f"Account '{name}' does not exist"
     if name == DEFAULT_ACCOUNT:
-        return False, "不能删除 default 账号"
+        return False, "Cannot delete default account"
 
     entry = reg["accounts"].pop(name)
     if reg.get("last_used") == name:
@@ -120,12 +120,12 @@ def remove_account(name: str, delete_data: bool = False) -> tuple[bool, str]:
         data_dir = Path(entry["data_dir"])
         if data_dir.exists():
             shutil.rmtree(str(data_dir), ignore_errors=True)
-            return True, f"已删除账号 '{name}' 及其数据目录"
-    return True, f"已删除账号 '{name}'（数据目录已保留）"
+            return True, f"Account '{name}' and its data directory have been deleted"
+    return True, f"Account '{name}' has been deleted (data directory has been retained)"
 
 
 def list_accounts() -> list[dict]:
-    """返回所有账号信息列表。"""
+    """Returns a list of all account information."""
     _migrate_legacy()
     reg = _load_registry()
     result = []
@@ -140,7 +140,7 @@ def list_accounts() -> list[dict]:
 
 
 def _find_chrome_path() -> str:
-    """定位 Chrome 可执行文件路径。"""
+    """Locate the Chrome executable path."""
     if sys.platform == "darwin":
         return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     for p in [
@@ -154,14 +154,14 @@ def _find_chrome_path() -> str:
 
 
 def launch_chrome_for_login(account: str | None = None) -> tuple[bool, str]:
-    """向后兼容入口，直接调用 launch_chrome_for_account。"""
+    """For backward compatibility, call launch_chrome_for_account directly."""
     return launch_chrome_for_account(account)
 
 
 def _is_existing_chrome_compatible(port: int, expected_data_dir: str) -> bool:
-    """检测端口上已运行的 Chrome 是否就是目标账号的调试 Chrome（user-data-dir 匹配）。
+    """Check whether the Chrome running on the port is the debug Chrome of the target account (user-data-dir matching).
 
-    匹配则可直接复用，避免误杀已经登录好的 Chrome 实例。
+    Matches can be directly reused to avoid accidentally killing already logged-in Chrome instances.
     """
     try:
         result = subprocess.run(
@@ -190,36 +190,36 @@ def _is_existing_chrome_compatible(port: int, expected_data_dir: str) -> bool:
 
 
 def launch_chrome_for_account(account: str | None = None, port: int = 9222) -> tuple[bool, str]:
-    """为指定账号启动 Chrome 调试浏览器，供用户登录和数据采集。
+    """Launch the Chrome debugging browser for the specified account for user login and data collection.
 
-    安全策略（防止误杀日常 Chrome 或已登录的调试 Chrome）：
-      1. 如果 9222 端口已有 Chrome 在跑，且其 user-data-dir 与目标账号匹配
-         → 直接复用，不杀不重启，登录态保留
-      2. 如果 9222 端口已有 Chrome 在跑，但 user-data-dir 不匹配（说明是其他账号或日常 Chrome）
-         → kill_browser 内部的安全护栏会拒绝终止；返回提示要求用户手动处理
-      3. 如果 9222 端口空闲 → 正常启动新的调试 Chrome
+    Security policy (to prevent accidental killing of daily Chrome or logged-in debug Chrome):
+      1. If Chrome is already running on port 9222, and its user-data-dir matches the target account
+         → Direct reuse, no killing or restarting, login status retained
+      2. If Chrome is already running on port 9222, but the user-data-dir does not match (it means other accounts or daily Chrome)
+         → The internal safety guardrail of kill_browser will refuse to terminate; a prompt will be returned requiring the user to handle it manually
+      3. If port 9222 is free → Start new debug Chrome normally
     """
     data_dir = get_data_dir(account)
     account = account or _load_registry().get("last_used", DEFAULT_ACCOUNT)
     chrome_path = _find_chrome_path()
 
     if _is_existing_chrome_compatible(port, data_dir):
-        logger.info(f"  ✅ 端口 {port} 上已有匹配的调试 Chrome 在运行，直接复用")
+        logger.info(f"  ✅ There is already a matching debugging Chrome running on port {port}, so you can reuse it directly.")
         return True, (
-            f"✅ 检测到账号 '{account}' 的调试 Chrome 已在运行 (端口 {port})\n"
-            f"   数据目录: {data_dir}\n"
-            f"   未做任何重启操作，登录状态保留。\n"
-            f"   如需切换账号，请先运行: social-upload restart-browser --port {port}"
+            f"✅ Detected that debug Chrome for account '{account}' is already running (port {port})\n"
+            f"   Data directory: {data_dir}\n"
+            f"   No restart operation has been performed, and the login status is retained. \n"
+            f"   If you need to switch accounts, please run: social-upload restart-browser --port {port}"
         )
 
     killed, kill_msg = _kill_existing_chrome_safely(port)
-    if not killed and "不属于本项目" in kill_msg:
+    if not killed and kill_msg.startswith("FOREIGN_CHROME:"):
         return False, (
-            f"⚠️ 端口 {port} 已被一个**非本项目**的 Chrome 实例占用，无法自动启动\n"
+            f"⚠️Port {port} is already occupied by a Chrome instance **not for this project** and cannot be started automatically\n"
             f"   {kill_msg}\n"
-            f"   建议操作：\n"
-            f"     1. 手动关闭那个 Chrome 实例（不影响你日常使用的 Chrome）\n"
-            f"     2. 或换一个调试端口启动："
+            f"   Recommended Action:\n"
+            f"     1. Manually close that Chrome instance (does not affect the Chrome you use daily)\n"
+            f"     2. Or start with another debugging port:"
             f" social-upload account login --port 9223"
         )
 
@@ -242,21 +242,21 @@ def launch_chrome_for_account(account: str | None = None, port: int = 9222) -> t
         )
         time.sleep(3)
         return True, (
-            f"✅ 已为账号 '{account}' 启动 Chrome (端口 {port})\n"
-            f"   数据目录: {data_dir}\n"
-            f"   请在浏览器中登录 TikTok / Instagram / YouTube，登录完成后告诉我。"
+            f"✅ Chrome has been launched for account '{account}' (port {port})\n"
+            f"   Data directory: {data_dir}\n"
+            f"   Please log in to TikTok / Instagram / YouTube in your browser and let me know when the login is complete."
         )
     except FileNotFoundError:
-        return False, f"❌ 未找到 Chrome，请确认安装路径: {chrome_path}"
+        return False, f"❌ Chrome not found, please confirm the installation path: {chrome_path}"
     except Exception as e:
-        return False, f"❌ 启动 Chrome 失败: {e}"
+        return False, f"❌ Failed to start Chrome: {e}"
 
 
 def _kill_existing_chrome_safely(port: int) -> tuple[bool, str]:
-    """带安全护栏的 Chrome 终止：只杀本项目的调试 Chrome。"""
+    """Chrome termination with safety guardrails: Kill only the debugging Chrome for this project."""
     from social_uploader.tools.browser_manager import kill_browser
     killed, msg = kill_browser(port=port)
     if killed:
-        logger.info(f"  🔄 已关闭旧的本项目调试 Chrome (端口 {port})")
+        logger.info(f"  🔄 The old debugging Chrome for this project has been closed (port {port})")
         time.sleep(1)
     return killed, msg

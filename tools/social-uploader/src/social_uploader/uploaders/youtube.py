@@ -19,37 +19,37 @@ from social_uploader.tools.pattern_checker import check_signals, get_signal_list
 logger = logging.getLogger(__name__)
 
 """
-代码地图（AI 修改时先看这里定位代码位置）：
+Code map (when making AI modifications, look here first to locate the code location):
 
-步骤名          | 做什么                     | 代码位置
+Step name | What to do | Code location
 ----------------|----------------------------|---------------------------
-validate        | 校验视频文件               | upload_youtube() 开头
-connect         | 连接浏览器                 | upload_youtube() 中段
-login           | 打开 Studio + 检测登录     | _do_upload_youtube() → 步骤 1
-cleanup         | 关闭残留弹窗               | _do_upload_youtube() → 步骤 2
-upload_dialog   | 唤出上传弹窗               | _do_upload_youtube() → 步骤 3
-file_inject     | 注入视频文件               | _do_upload_youtube() → 步骤 4
-form_fill       | 填写标题和描述             | _do_upload_youtube() → 步骤 5
-kids            | 设置不面向儿童             | _do_upload_youtube() → 步骤 6
-next_steps      | 循环点击下一步             | _do_upload_youtube() → 步骤 7
-visibility      | 设置为公开                 | _do_upload_youtube() → 步骤 8
-publish         | 点击发布按钮               | _do_upload_youtube() → 步骤 9
-confirm         | 等待发布成功确认           | _do_upload_youtube() → 步骤 10
+validate | Verify video file | Start with upload_youtube()
+connect | connect browser | upload_youtube() middle section
+login | Open Studio + Detect login | _do_upload_youtube() → Step 1
+cleanup | Close remaining pop-ups | _do_upload_youtube() → Step 2
+upload_dialog | Bring up the upload pop-up window | _do_upload_youtube() → Step 3
+file_inject | Inject video file | _do_upload_youtube() → Step 4
+form_fill | Fill in title and description | _do_upload_youtube() → Step 5
+kids | Set not directed to children | _do_upload_youtube() → Step 6
+next_steps | Loop click next | _do_upload_youtube() → Step 7
+visibility | set to public | _do_upload_youtube() → step 8
+publish | Click the publish button | _do_upload_youtube() → Step 9
+confirm | Wait for confirmation of successful publishing | _do_upload_youtube() → Step 10
 
-辅助函数：
-  should_skip() — resume-from 跳步判断（来自 uploaders.__init__）
+Helper functions:
+  should_skip() — resume-from skip judgment (from uploaders.__init__)
 
-YouTube 平台专属辅助（位于 uploaders/youtube_helpers.py，禁止其他平台 import）：
-  find_file_input_deep()      — 穿透 Shadow DOM 查找 file input（YouTube Studio 必需）
-  _set_youtube_schedule()     — 定时发布（格式: YYYY-MM-DD HH:MM）+ CDP 时间字段聚焦
-  _writeback_from_fallback()  — 索引模式找到的元素回写 button_config.json
+YouTube platform-specific helpers (located in uploaders/youtube_helpers.py, other platforms are prohibited from importing):
+  find_file_input_deep() — Find file input through Shadow DOM (required for YouTube Studio)
+  _set_youtube_schedule() — Scheduled release (format: YYYY-MM-DD HH:MM) + CDP time field focus
+  _writeback_from_fallback() — Writeback of elements found in index pattern button_config.json
 
-已实现的 profile 配置项（profile.youtube.*）：
-  made_for_kids  — 是否面向儿童（默认 false）
-  visibility     — 可见性：public / unlisted / private（默认 public）
-  tags           — 标签，逗号分隔字符串（默认 null）
-  category       — 分类名（默认 null）
-  schedule       — 定时发布时间：'YYYY-MM-DD HH:MM'（默认 null = 立即发布）
+Implemented profile configuration items (profile.youtube.*):
+  made_for_kids — Whether it is made for children (default false)
+  visibility — Visibility: public / unlisted / private (default public)
+  tags — tags, comma separated string (default null)
+  category — category name (default null)
+  schedule — Scheduled release time: 'YYYY-MM-DD HH:MM' (default null = publish immediately)
 """
 
 YOUTUBE_UPLOAD_URL_PREFIX = "https://studio.youtube.com"
@@ -72,18 +72,18 @@ def upload_youtube(video_path, title, description, no_publish=False, run_id=None
 
     ok, err_msg = validate_video_file(video_path, platform="youtube")
     if not ok:
-        logger.error(f"❌ 视频预校验失败: {err_msg}")
+        logger.error(f"❌ Video pre-verification failed: {err_msg}")
         log_step("validate", "fail", error="file_rejected", detail=err_msg)
         return False
     file_size = os.path.getsize(video_path)
-    logger.info(f"✅ 视频预校验通过 ({os.path.basename(video_path)}, {file_size/1024:.0f}KB)")
+    logger.info(f"✅ Video pre-verification passed ({os.path.basename(video_path)}, {file_size/1024:.0f}KB)")
     log_step("validate", "ok", file=os.path.basename(video_path), size_kb=round(file_size / 1024))
 
     data_dir = None
     if account is not None:
         from social_uploader.account_manager import get_data_dir
         data_dir = get_data_dir(account)
-        logger.info(f"👤 使用账号: {account}")
+        logger.info(f"👤 User account: {account}")
 
     try:
         if resume_from:
@@ -91,9 +91,9 @@ def upload_youtube(video_path, title, description, no_publish=False, run_id=None
             platform_tab = find_platform_tab(ctrl, YOUTUBE_UPLOAD_URL_PREFIX)
             if platform_tab:
                 work = platform_tab
-                logger.info(f"🔄 找到 YouTube Studio 页面标签，将从 {resume_from} 步骤恢复")
+                logger.info(f"🔄 Find the YouTube Studio page tag, which will be restored from the {resume_from} step")
             else:
-                logger.warning("⚠️ 未找到 YouTube Studio 页面标签，将从头执行")
+                logger.warning("⚠️ YouTube Studio page tag not found, will be executed from scratch")
                 work = ctrl.new_tab(url="about:blank")
                 work.set.auto_handle_alert(accept=True)
                 resume_from = None
@@ -101,7 +101,7 @@ def upload_youtube(video_path, title, description, no_publish=False, run_id=None
             ctrl, work, baseline_tab_ids, _ = connect_browser(data_dir=data_dir)
         log_step("connect", "ok", port=9222)
     except Exception as e:
-        logger.error(f"❌ 连接浏览器失败，请确保运行了 start_chrome_debug.sh。错误详情: {e}")
+        logger.error(f"❌ Failed to connect to the browser, please make sure start_chrome_debug.sh is run. Error details: {e}")
         log_step("connect", "fail", error="unknown", detail=str(e)[:200])
         return False
 
@@ -115,26 +115,26 @@ def upload_youtube(video_path, title, description, no_publish=False, run_id=None
             write_success(run_id, "youtube", elapsed_s=round(time.time() - _t0))
             cleanup_tabs(ctrl, baseline_tab_ids)
         else:
-            logger.info("💡 任务窗口已保留，可用 --resume-from 从断点恢复")
+            logger.info("💡 The task window has been retained and can be resumed from the breakpoint with --resume-from")
 
 
 def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, description, no_publish, run_id, resume_from, config):
     platform = "youtube"
     page = work
 
-    # resume-from 页面状态校验
+    # resume-from page status verification
     if resume_from:
         current_url = page.url or ""
         if YOUTUBE_UPLOAD_URL_PREFIX not in current_url:
-            logger.warning(f"⚠️ 页面已离开 YouTube Studio ({current_url[:60]}...)，忽略 resume-from，从头执行")
+            logger.warning(f"⚠️ The page has left YouTube Studio ({current_url[:60]}...), ignore resume-from, and execute from the beginning")
             log_step("resume_check", "fail", reason="page_url_changed", url=current_url[:100])
             resume_from = None
         else:
             log_step("resume_check", "ok", resume_from=resume_from)
 
-    # 1. 登录状态检测
+    # 1. Login status detection
     if not should_skip("login", resume_from, STEPS):
-        logger.info("🌐 正在检查 YouTube 登录状态...")
+        logger.info("🌐 Checking YouTube login status...")
         page.get('https://studio.youtube.com/')
         page.wait.doc_loaded(timeout=10)
         inject_popup_guard(page)
@@ -153,11 +153,11 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
             return False
         log_step("login", "ok")
 
-    # 页面状态检测
+    # Page status detection
     if not should_skip("page_check", resume_from, STEPS):
         has_page_error, page_error_desc = check_page_error(page, platform)
         if has_page_error:
-            logger.error(f"❌ YouTube 平台异常: {page_error_desc}")
+            logger.error(f"❌ YouTube platform exception: {page_error_desc}")
             log_step("page_check", "fail", error="platform_unavailable", detail=page_error_desc)
             report_failure(page, run_id, platform, "page_check", "platform_unavailable", safe_page_url(page),
                            detail=page_error_desc)
@@ -166,9 +166,9 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
 
         preflight_check(page, platform)
 
-    # 2. 关闭残留弹窗
+    # 2. Close remaining pop-up windows
     if not should_skip("cleanup", resume_from, STEPS):
-        logger.info("🧹 正在扫描并清理可能存在的弹窗...")
+        logger.info("🧹 Scanning and cleaning possible pop-ups...")
         dismiss_popups(page, platform, max_rounds=1)
         cleanup_patterns = get_patterns(platform, "cleanup")
         dialog_js = cleanup_patterns.get("dialog_js", "")
@@ -177,21 +177,21 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                 page.run_js(dialog_js)
                 time.sleep(1)
             except Exception as e:
-                logger.debug(f"  清理弹窗 JS 执行失败: {e}")
+                logger.debug(f"  JS execution failed to clear pop-up windows: {e}")
         log_step("cleanup", "ok")
 
-    # 3. 唤出上传弹窗
-    # 实测最稳路径：URL 直跳 `studio.youtube.com/channel/<id>/videos/upload?d=ud`
-    # 比点 #upload-icon 更可靠（图标点击有时静默无效，对话框不弹）
+    # 3. Call up the upload pop-up window
+    # The most stable path measured: URL jump `studio.youtube.com/channel/<id>/videos/upload?d=ud`
+    # More reliable than clicking #upload-icon (icon clicks are sometimes silently invalid and the dialog box does not pop up)
     if not should_skip("upload_dialog", resume_from, STEPS):
         dismiss_interfering_overlays(ctrl, work, baseline_tab_ids)
-        logger.info("📤 正在唤出上传弹窗...")
+        logger.info("📤 Calling up the upload pop-up window...")
 
         dialog_open = ensure_upload_dialog_open(page, timeout=15)
 
-        # 兜底：URL 直跳失败时退回原 #upload-icon 路径
+        # Bottom line: URL redirection fails and returns to the original #upload-icon path
         if not dialog_open:
-            logger.info("  ↩️ URL 直跳未弹出对话框，降级到 #upload-icon 点击...")
+            logger.info("  ↩️ The URL jumps directly without popping up the dialog box, downgrades to #upload-icon click...")
             try:
                 upload_icon, _ = find_element(page, platform, "upload_icon", timeout=3)
                 if upload_icon:
@@ -209,54 +209,54 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                             time.sleep(2)
                             dialog_open = ensure_upload_dialog_open(page, timeout=5)
             except Exception as e:
-                logger.warning(f"  ⚠️ 降级路径异常: {e}")
+                logger.warning(f"  ⚠️ Abnormal downgrade path: {e}")
 
         if not dialog_open:
-            logger.error("❌ 上传对话框打开失败（URL 直跳 + #upload-icon + #create-icon 均失败）")
+            logger.error("❌ Failed to open the upload dialog box (URL direct jump + #upload-icon + #create-icon all failed)")
             log_step("upload_dialog", "fail", error="dialog_not_open",
-                     detail="ytcp-uploads-dialog 在 15s 内未出现")
+                     detail="ytcp-uploads-dialog does not appear within 15s")
             report_failure(page, run_id, platform, "upload_dialog", "dialog_not_open", safe_page_url(page),
                            selectors_tried="ensure_upload_dialog_open + upload_icon + create_button")
             return False
 
         log_step("upload_dialog", "ok")
 
-    # 4. 等待并上传文件
+    # 4. Wait and upload the file
     if not should_skip("file_inject", resume_from, STEPS):
-        logger.info("⏳ 等待上传组件加载...")
-        # 三层兜底（轨道A → Tier2 启发式 → 轨道B AI）
+        logger.info("⏳ Waiting for the upload component to load...")
+        # Three layers of security (Track A → Tier2 heuristic → Track B AI)
         file_input, _ = find_element(page, platform, "file_input", timeout=15)
-        # 第 4 层兜底：YouTube Studio 把 file input 包在 web component 的 shadowRoot 内,
-        # 标准 querySelector / page.ele 无法穿透 closed shadow root,
-        # 用 JS 递归遍历所有 shadowRoot 兜底。
+        # The fourth layer of cover: YouTube Studio wraps the file input in the shadowRoot of the web component.
+        # Standard querySelector / page.ele cannot penetrate closed shadow root,
+        # Use JS to recursively traverse all shadowRoots.
         if not file_input:
-            logger.info("  🌑 三层选择器未命中，尝试 Shadow DOM 深度查找...")
+            logger.info("  🌑 Three-layer selector miss, try Shadow DOM depth search...")
             file_input = find_file_input_deep(page, timeout=15)
             if file_input:
-                logger.info("  ✅ Shadow DOM 深度查找命中 file input")
+                logger.info("  ✅ Shadow DOM depth search hits file input")
         if not file_input:
-            logger.error("❌ 30秒内未找到上传按钮，可能是网络太慢或页面结构突变。")
+            logger.error("❌ If the upload button is not found within 30 seconds, it may be that the network is too slow or the page structure has changed suddenly.")
             log_step("file_inject", "fail", error="selector_not_found",
-                     detail="file input 未找到（三层选择器 + Shadow DOM 深度查找均失败）")
+                     detail="file input not found (three-layer selector + Shadow DOM depth search failed)")
             report_failure(page, run_id, platform, "file_inject", "selector_not_found", safe_page_url(page),
                            selectors_tried="file_input + shadow_dom_deep")
             return False
 
-        logger.info(f"📁 正在静默注入视频文件: {video_path}")
+        logger.info(f"📁 Silently injecting video file: {video_path}")
         try:
             file_input.input(video_path)
         except Exception as e:
-            logger.error(f"  ❌ 文件注入失败: {e}")
+            logger.error(f"  ❌ File injection failed: {e}")
             log_step("file_inject", "fail", error="inject_exception", detail=str(e)[:200])
             report_failure(page, run_id, platform, "file_inject", "inject_exception", safe_page_url(page),
                            detail=str(e)[:200])
             return False
         log_step("file_inject", "ok", file=os.path.basename(video_path))
 
-    # 5. 填写表单
+    # 5. Fill in the form
     if not should_skip("form_fill", resume_from, STEPS):
         dismiss_interfering_overlays(ctrl, work, baseline_tab_ids)
-        logger.info("📝 正在填写视频信息...")
+        logger.info("📝 Filling in video information...")
         safe_title = (title or "")[:95]
         safe_desc = (description or "")[:4900]
 
@@ -267,7 +267,7 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
         desc_box, _ = find_element(page, platform, "desc_box", timeout=5)
 
         if not title_box or not desc_box:
-            logger.info("  按语义选择器未全部找到，降级为索引模式...")
+            logger.info("  Not all found by semantic selector, downgraded to index mode...")
             fallback_sels = get_signal_list(platform, "form_fill", "textbox_fallback")
             fallback_sel = fallback_sels[0] if fallback_sels else '#textbox'
             textboxes = page.eles(fallback_sel, timeout=20)
@@ -282,20 +282,20 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
         if title_box:
             title_box.clear()
             title_box.input(safe_title)
-            logger.info("  ✅ 标题已填写")
+            logger.info("  ✅The title has been filled in")
         else:
-            logger.warning("  ⚠️ 未找到标题输入框，跳过")
+            logger.warning("  ⚠️ Title input box not found, skip")
 
         if desc_box:
             desc_box.clear()
             desc_box.input(safe_desc)
-            logger.info("  ✅ 描述已填写")
+            logger.info("  ✅ Description has been filled in")
         else:
-            logger.warning("  ⚠️ 未找到描述输入框，跳过")
+            logger.warning("  ⚠️ Description input box not found, skip")
 
         tags = config.get("tags")
         if tags:
-            logger.info("🏷️ 正在填写标签...")
+            logger.info("🏷️ Filling in tags...")
             show_more = page.ele('text:Show more', timeout=2) or page.ele('text:展开', timeout=1)
             if show_more:
                 try:
@@ -312,14 +312,14 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                 tags_input.clear()
                 tags_input.input(tags_text)
                 time.sleep(0.3)
-                logger.info(f"  ✅ 已填写 {len(tag_list)} 个标签")
+                logger.info(f"  ✅ {len(tag_list)} tags filled in")
             else:
-                logger.warning("  ⚠️ 未找到标签输入框")
+                logger.warning("  ⚠️ Tag input box not found")
 
         category = config.get("category")
         if category:
             safe_cat = category.replace("'", "\\'")
-            logger.info(f"🗂️ 正在设置分类: {category}...")
+            logger.info(f"🗂️ Setting category: {category}...")
             cat_info = page.run_js(f"""
                 var safe = '{safe_cat}';
                 var selects = document.querySelectorAll('select, [role="listbox"]');
@@ -360,30 +360,30 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                 elif cat_info.get('type') == 'opened':
                     cat_result = 'opened'
             if cat_result == 'ok_select':
-                logger.info(f"  ✅ 分类: {category}")
+                logger.info(f"  ✅ Category: {category}")
             elif cat_result == 'opened':
                 time.sleep(0.5)
                 opt = page.ele(f'text:{category}', timeout=3)
                 if opt:
                     try:
                         opt.click()
-                        logger.info(f"  ✅ 分类: {category} (自定义下拉)")
+                        logger.info(f"  ✅ Category: {category} (Customized drop-down)")
                     except Exception:
-                        logger.warning(f"  ⚠️ 点击分类选项失败")
+                        logger.warning(f"  ⚠️Clicking the category option failed")
                 else:
-                    logger.warning(f"  ⚠️ 未找到分类选项: {category}")
+                    logger.warning(f"  ⚠️ Category option not found: {category}")
             else:
-                logger.warning(f"  ⚠️ 设置分类失败: {cat_result}")
+                logger.warning(f"  ⚠️Failed to set category: {cat_result}")
 
         log_step("form_fill", "ok", title_filled=bool(title_box), desc_filled=bool(desc_box),
                  tags=bool(tags), category=bool(category))
 
-    # 6. 设置面向儿童选项（根据 config.made_for_kids）
+    # 6. Set child-oriented options (according to config.made_for_kids)
     if not should_skip("kids", resume_from, STEPS):
         dismiss_interfering_overlays(ctrl, work, baseline_tab_ids)
         made_for_kids = config.get("made_for_kids", False)
-        kids_label = "面向儿童" if made_for_kids else "不面向儿童"
-        logger.info(f"👶 正在设置观众限制（{kids_label}）...")
+        kids_label = "for children" if made_for_kids else "Not for children"
+        logger.info(f"👶 Setting viewer limit ({kids_label})...")
 
         try:
             page.run_js("""
@@ -415,7 +415,9 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
 
         for attempt in range(MAX_KIDS_ATTEMPTS):
             if attempt > 0:
-                logger.info(f"  🔄 第 {attempt+1} 次尝试选择「不面向儿童」...")
+                logger.info(
+                    f'  🔄 Attempt {attempt + 1} to select "No, it is not made for kids"...'
+                )
                 time.sleep(1)
                 try:
                     page.run_js("""
@@ -439,10 +441,10 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                     time.sleep(0.5)
                     if verify_kids_selected():
                         kids_clicked = True
-                        logger.info(f"  ✅ 已选择（CDP 点击，第 {attempt+1} 次）")
+                        logger.info(f"  ✅ Selected (CDP click, {attempt+1}th time)")
                         break
                     else:
-                        logger.info("  ⚠️ CDP 点击已执行，但验证未通过")
+                        logger.info("  ⚠️ CDP click executed, but verification failed")
             except Exception:
                 pass
 
@@ -454,7 +456,7 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                         time.sleep(0.5)
                         if verify_kids_selected():
                             kids_clicked = True
-                            logger.info(f"  ✅ 已选择（原生坐标点击，第 {attempt+1} 次）")
+                            logger.info(f"  ✅ Selected (native coordinate click, {attempt+1}th time)")
                             break
                     except Exception:
                         pass
@@ -466,10 +468,20 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                     text_lower = text.lower()
                     is_match = False
                     if made_for_kids:
-                        if ('面向儿童' in text or 'made for kids' in text_lower) and '不' not in text and 'not' not in text_lower:
+                        positive = (
+                            'for children' in text_lower
+                            or 'made for kids' in text_lower
+                            or '面向儿童' in text
+                        )
+                        negative = (
+                            'no' in text_lower
+                            or 'not' in text_lower
+                            or '不' in text
+                        )
+                        if positive and not negative:
                             is_match = True
                     else:
-                        if '不' in text or 'not' in text_lower:
+                        if 'no' in text_lower or 'not' in text_lower or '不' in text:
                             is_match = True
                     if not is_match:
                         continue
@@ -478,7 +490,7 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                         time.sleep(0.5)
                         if verify_kids_selected():
                             kids_clicked = True
-                            logger.info(f"  ✅ 已选择（radioLabel 点击: {text[:20]}，第 {attempt+1} 次）")
+                            logger.info(f"  ✅ Selected (radioLabel click: {text[:20]}, 1st time {attempt+1})")
                             break
                     except Exception:
                         pass
@@ -504,7 +516,7 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                         time.sleep(0.5)
                         if verify_kids_selected():
                             kids_clicked = True
-                            logger.info(f"  ✅ 已选择（内部容器点击: {result}，第 {attempt+1} 次）")
+                            logger.info(f"  ✅ Selected (inner container click: {result}, 1st time {attempt+1})")
                             break
                 except Exception:
                     pass
@@ -529,7 +541,7 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                             time.sleep(0.5)
                             if verify_kids_selected():
                                 kids_clicked = True
-                                logger.info(f"  ✅ 已选择（文本选择器，第 {attempt+1} 次）")
+                                logger.info(f"  ✅ Selected (text selector, time {attempt+1})")
                                 break
                         except Exception:
                             pass
@@ -537,24 +549,27 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                     break
 
         if kids_clicked:
-            logger.info(f"  ✅ 观众限制设置完成：{kids_label}（已验证选中状态）")
+            logger.info(f"  ✅ Audience limit setting completed: {kids_label} (selected status verified)")
         else:
-            logger.error(f"  ❌ 无法自动选择「{kids_label}」，中止发布以防合规问题")
+            logger.error(
+                f'  ❌ Could not select "{kids_label}" automatically; publishing was stopped '
+                "to avoid a compliance issue"
+            )
             log_step("kids", "fail", error="kids_setting_failed",
-                     detail="多策略尝试均未通过验证")
+                     detail="Multiple strategy attempts failed verification")
             report_failure(page, run_id, platform, "kids", "kids_setting_failed", safe_page_url(page),
-                           detail="儿童选项设置失败")
+                           detail="Failed to set children's options")
             return False
 
         log_step("kids", "ok")
         time.sleep(1)
 
-    # 7. 循环点击下一步
+    # 7. Cycle through and click Next
     if not should_skip("next_steps", resume_from, STEPS):
-        logger.info("⏭️ 正在跳过中间步骤（视频元素 / 检查）...")
-        step_names = ['视频元素', '检查', '可见性']
+        logger.info("⏭️ Skipping intermediate steps (video elements/inspections)...")
+        step_names = ['video element', 'examine', 'visibility']
         for i in range(3):
-            step_label = step_names[i] if i < len(step_names) else f'步骤{i+1}'
+            step_label = step_names[i] if i < len(step_names) else f'Step {i+1}'
 
             next_btn_sels = get_signal_list(platform, "next_steps", "next_button")
             if not next_btn_sels:
@@ -579,7 +594,7 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                     try:
                         ctrl, work, baseline_tab_ids, _ = connect_browser(new_window=False)
                         page = work
-                        logger.info("  🔄 已重新连接浏览器")
+                        logger.info("  🔄 Browser reconnected")
                     except Exception:
                         pass
                 time.sleep(1)
@@ -587,35 +602,35 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
             if next_btn:
                 try:
                     next_btn.click()
-                    logger.info(f"  ✅ 已跳过【{step_label}】")
+                    logger.info(f"  ✅【{step_label}】 has been skipped")
                 except Exception:
                     try:
                         page.run_js(f'document.querySelector("{next_btn_sels[0]}").click()')
-                        logger.info(f"  ✅ 已跳过【{step_label}】(JS)")
+                        logger.info(f"  ✅【{step_label}】(JS) has been skipped")
                     except Exception:
-                        logger.warning(f"  ⚠️ 跳过【{step_label}】失败")
+                        logger.warning(f"  ⚠️ Failed to skip【{step_label}】")
             else:
-                logger.warning(f"  ⚠️ 未找到下一步按钮（{step_label}），尝试继续...")
+                logger.warning(f"  ⚠️Next button not found ({step_label}), try to continue...")
 
             time.sleep(1)
         log_step("next_steps", "ok")
 
-    # === no_publish 检查 ===
+    # === no_publish check ===
     if no_publish:
-        logger.info("⏸️ --no-publish 模式：表单已填好，跳过发布步骤。请在浏览器中手动选择可见性并发布。")
+        logger.info("⏸️ --no-publish mode: The form has been filled in, skip the publishing step. Please select visibility manually in your browser and publish.")
         log_step("complete", "ok", mode="no_publish")
         return True
 
-    # 8. 设置可见性（根据 config.visibility）
+    # 8. Set visibility (according to config.visibility)
     if not should_skip("visibility", resume_from, STEPS):
         visibility = (config.get("visibility") or "public").upper()
         visibility_labels = {
-            "PUBLIC": ("公开", "Public"),
-            "UNLISTED": ("不公开列出", "Unlisted"),
-            "PRIVATE": ("私享", "Private"),
+            "PUBLIC": ("public", "Public"),
+            "UNLISTED": ("Not publicly listed", "Unlisted"),
+            "PRIVATE": ("Private", "Private"),
         }
-        vis_cn, vis_en = visibility_labels.get(visibility, ("公开", "Public"))
-        logger.info(f"🌍 正在设置视频为【{vis_cn} ({vis_en})】...")
+        vis_cn, vis_en = visibility_labels.get(visibility, ("public", "Public"))
+        logger.info(f"🌍 Setting the video to [{vis_cn} ({vis_en})]...")
         visibility_clicked = False
         for attempt in range(3):
             try:
@@ -648,7 +663,7 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                 if info:
                     cdp_click_at(page, info['x'], info['y'])
                     visibility_clicked = True
-                    logger.info(f"  ✅ 已设置为{vis_cn}（CDP 点击: {info['type']}）")
+                    logger.info(f"  ✅ Set to {vis_cn} (CDP click: {info['type']})")
                     break
             except Exception:
                 pass
@@ -658,7 +673,7 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                 try:
                     vis_radio.click(by_js=False)
                     visibility_clicked = True
-                    logger.info(f"  ✅ 已设置为{vis_cn}（原生点击）")
+                    logger.info(f"  ✅ Set to {vis_cn} (native click)")
                     break
                 except Exception:
                     pass
@@ -666,42 +681,42 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
 
         if not visibility_clicked:
             if visibility != "PUBLIC":
-                logger.error(f"  ❌ 可见性设置失败（目标: {vis_cn}），为防止视频以错误可见性发布，已中止。")
+                logger.error(f"  ❌ Visibility setting failed (Target: {vis_cn}), aborted to prevent video from being published with wrong visibility.")
                 log_step("visibility", "fail", error="visibility_failed",
-                         detail=f"可见性 {vis_cn} 设置失败，中止发布以防泄露")
+                         detail=f"Visibility {vis_cn} failed to set, publishing is aborted to prevent leakage")
                 report_failure(page, run_id, platform, "visibility", "visibility_failed", safe_page_url(page),
-                               detail=f"可见性 {vis_cn} 设置失败")
+                               detail=f"Visibility {vis_cn} setup failed")
                 return False
             else:
-                logger.warning(f"  ⚠️ 无法确认{vis_cn}已选中，但公开为默认值，继续发布...")
+                logger.warning(f"  ⚠️ Unable to confirm that {vis_cn} is selected but exposed as default, continue publishing...")
         log_step("visibility", "ok" if visibility_clicked else "fail",
                  error="" if visibility_clicked else "unknown",
-                 detail="" if visibility_clicked else f"{vis_cn}设置未成功")
+                 detail="" if visibility_clicked else f"{vis_cn} setting failed")
 
-        # 8.5 定时发布（仅在 visibility 步骤内，需要先设好 PUBLIC）
+        # 8.5 Scheduled release (only in visibility step, PUBLIC needs to be set up first)
         schedule_str = config.get("schedule")
         if schedule_str:
-            logger.info(f"📅 检测到定时发布配置: {schedule_str}")
+            logger.info(f"📅 Detected scheduled release configuration: {schedule_str}")
             schedule_ok, schedule_diag = _set_youtube_schedule(page, schedule_str)
             if schedule_ok:
-                logger.info(f"✅ YouTube 定时发布已设置: {schedule_str}")
+                logger.info(f"✅ YouTube scheduled release has been set: {schedule_str}")
                 log_step("schedule", "ok", schedule=schedule_str)
             else:
-                logger.error(f"❌ YouTube 定时发布设置失败: {schedule_str}")
-                logger.error("🚨 安全门控：定时设置失败，中止发布防止视频立即公开")
+                logger.error(f"❌ YouTube scheduled publishing setting failed: {schedule_str}")
+                logger.error("🚨 Security gate control: If the timing setting fails, publishing will be suspended to prevent the video from being made public immediately.")
                 log_step("schedule", "fail", error="recipe_step_failed", detail=schedule_str)
                 diag = schedule_diag or {}
                 report_failure(page, run_id, platform, "schedule", "recipe_step_failed", safe_page_url(page),
-                               detail=f"定时发布 {schedule_str} 设置失败",
+                               detail=f"Scheduled publishing {schedule_str} setting failed",
                                recipe_key=diag.get("recipe_key", "schedule_recipe"),
                                failed_step=diag.get("failed_step", ""),
                                semantic_hint=diag.get("semantic_hint", ""),
                                selectors_tried="schedule_recipe")
                 return False
 
-    # 9. 点击发布按钮
+    # 9. Click the Publish button
     if not should_skip("publish", resume_from, STEPS):
-        logger.info("⏳ 等待发布按钮就绪...")
+        logger.info("⏳ Waiting for the publish button to be ready...")
         time.sleep(1.5)
 
         max_publish_attempts = 20
@@ -718,12 +733,12 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                     return 'ok';
                 """)
                 if result == 'ok':
-                    logger.info("✅ 视频发布指令已发送！")
+                    logger.info("✅ Video release instruction has been sent!")
                     clicked = True
                     break
                 elif result == 'disabled':
                     if attempt % 5 == 4:
-                        logger.info(f"  发布按钮仍未就绪，等待中... ({attempt+1}/{max_publish_attempts})")
+                        logger.info(f"  The publish button is not ready yet, waiting... ({attempt+1}/{max_publish_attempts})")
                     time.sleep(1.5)
                     continue
             except Exception:
@@ -738,23 +753,23 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
                         continue
                     if done_btn.states.has_rect:
                         done_btn.click()
-                        logger.info("✅ 视频发布指令已发送！")
+                        logger.info("✅ Video release instruction has been sent!")
                         clicked = True
                         break
                 except Exception:
                     pass
-            logger.warning(f"  ⚠️ 发布按钮点击失败，重试中... ({attempt+1}/{max_publish_attempts})")
+            logger.warning(f"  ⚠️ Failed to click the publish button, trying again... ({attempt+1}/{max_publish_attempts})")
             time.sleep(1.5)
 
         if not clicked:
-            logger.warning("⚠️ 多次尝试后仍无法点击发布按钮，请手动检查。")
-            log_step("publish", "fail", error="selector_not_found", detail="done_button 不可点击")
+            logger.warning("⚠️ If you still cannot click the publish button after multiple attempts, please check manually.")
+            log_step("publish", "fail", error="selector_not_found", detail="done_button is not clickable")
             report_failure(page, run_id, platform, "publish", "selector_not_found", safe_page_url(page),
                            selectors_tried="done_button")
             return False
         log_step("publish", "ok")
 
-    # 10. 等待发布成功确认（带智能重试）
+    # 10. Wait for confirmation of successful release (with smart retry)
     if not should_skip("confirm", resume_from, STEPS):
         from social_uploader.tools.post_publish import wait_for_publish_confirmation
         from social_uploader.tools.retry_engine import retry_step, StepResult
@@ -777,13 +792,13 @@ def _do_upload_youtube(work, ctrl, baseline_tab_ids, video_path, title, descript
 
         if confirm_result.success:
             reason = confirm_result.value or "retry_success"
-            logger.info(f"🎉 YouTube 自动化上传流程结束。({reason})")
+            logger.info(f"🎉The YouTube automated upload process ends. ({reason})")
             log_step("confirm", "ok", detail=str(reason)[:200])
             return True
         else:
             reason = confirm_result.error or "unknown"
-            logger.warning(f"  ⚠️ 发布确认失败: {reason}")
-            logger.info("❌ YouTube 上传流程结束（未确认成功）。")
+            logger.warning(f"  ⚠️ Release confirmation failed: {reason}")
+            logger.info("❌The YouTube upload process ends (success is not confirmed).")
             log_step("confirm", "fail", error="state_mismatch", detail=str(reason)[:200])
             report_failure(page, run_id, platform, "confirm", "state_mismatch",
                            page.url, detail=str(reason)[:200])

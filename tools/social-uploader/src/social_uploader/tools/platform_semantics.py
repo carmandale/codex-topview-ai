@@ -1,7 +1,7 @@
-"""平台语义配置 — 为每个平台的按钮/元素定义结构化语义描述。
+"""Platform semantic configuration — Define structured semantic descriptions for buttons/elements per platform.
 
-供 UltimateLocator 使用，通过 container + target 父子约束提高 AI 定位精度。
-每个 key 对应 button_config.json 中的同名 key。
+Used by UltimateLocator to improve AI positioning accuracy through container + target parent-child constraints.
+Each key corresponds to the key with the same name in button_config.json.
 """
 
 PLATFORM_SEMANTICS = {
@@ -87,11 +87,11 @@ PLATFORM_SEMANTICS = {
 
 
 def get_semantic_query(platform, key):
-    """返回语义字典，未配置时返回降级字典。
+    """Returns a semantic dictionary, or a degraded dictionary if not configured.
 
     Args:
-        platform: 平台名（tiktok/instagram/youtube）
-        key: 元素 key（如 post_button、file_input）
+        platform: platform name (tiktok/instagram/youtube)
+        key: element key (such as post_button, file_input)
 
     Returns:
         {"container": "...", "target": "..."}

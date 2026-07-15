@@ -1,10 +1,10 @@
-"""步骤级智能重试引擎 — 在步骤失败时利用 AI 诊断并智能恢复。
+"""Step-level intelligent retry engine — Leverages AI to diagnose and intelligently recover when steps fail.
 
-设计原则:
-1. 每个步骤最多重试 max_retries 次
-2. 每次重试前用 AI 诊断失败原因，根据建议执行恢复动作
-3. 不可逆步骤（如 publish）有特殊幂等性保护
-4. AI 不可用时降级为简单延时重试
+Design principles:
+1. Each step can be retried max_retries times at most.
+2. Use AI to diagnose the cause of failure before each retry, and perform recovery actions based on recommendations
+3. Irreversible steps (such as publish) have special idempotence protection
+4. Downgrade to simple delayed retry when AI is unavailable
 """
 
 import logging
@@ -22,7 +22,7 @@ _NEEDS_NAV_BACK = {"navigate_back"}
 
 
 class StepResult:
-    """步骤执行结果。"""
+    """Step execution result."""
     def __init__(self, success: bool, value: Any = None, error: str = ""):
         self.success = success
         self.value = value
@@ -41,16 +41,16 @@ def retry_step(
     is_irreversible: bool = False,
     pre_retry_check: Callable | None = None,
 ) -> StepResult:
-    """执行步骤，失败时智能重试。
+    """Execute steps and intelligently retry if they fail.
 
     Args:
-        page: DrissionPage 页面对象
-        platform: 平台名
-        step_name: 步骤名（用于日志和 AI 诊断）
-        step_fn: 步骤执行函数，签名 () -> StepResult
-        max_retries: 最大重试次数
-        is_irreversible: 是否为不可逆步骤（如 publish），如果是则重试前先做幂等检查
-        pre_retry_check: 重试前的幂等检查函数，签名 () -> bool (True=已完成无需重试)
+        page: DrissionPage page object
+        platform: platform name
+        step_name: step name (for logs and AI diagnosis)
+        step_fn: step execution function, signature () -> StepResult
+        max_retries: Maximum number of retries
+        is_irreversible: Is it an irreversible step (such as publish)? If so, do an idempotent check before retrying.
+        pre_retry_check: idempotent check function before retry, signature () -> bool (True=completed without retrying)
 
     Returns:
         StepResult
@@ -59,22 +59,22 @@ def retry_step(
 
     for attempt in range(1 + max_retries):
         if attempt > 0:
-            logger.info(f"  🔄 重试 {step_name} (第 {attempt}/{max_retries} 次)")
+            logger.info(f"  🔄 Retry {step_name} ({attempt}/{max_retries} times)")
 
             if is_irreversible and pre_retry_check:
                 try:
                     already_done = pre_retry_check()
                     if already_done:
-                        logger.info(f"  ✅ 幂等检查: {step_name} 已完成，无需重试")
+                        logger.info(f"  ✅ Idempotent check: {step_name} completed, no need to retry")
                         return StepResult(True, error="idempotent_skip")
                 except Exception as e:
-                    logger.debug(f"  幂等检查异常: {e}")
+                    logger.debug(f"  Idempotent check exception: {e}")
 
             recovery = _get_recovery_advice(page, platform, step_name, last_error)
             if recovery:
                 action = recovery.get("recovery", "retry_same")
                 if action in _NON_RETRYABLE_RECOVERIES:
-                    logger.warning(f"  AI 建议放弃: {recovery.get('diagnosis', '')}")
+                    logger.warning(f"  AI suggests giving up: {recovery.get('diagnosis', '')}")
                     return StepResult(False, error=f"ai_abort: {recovery.get('diagnosis', '')}")
 
                 _execute_recovery(page, action, recovery)
@@ -85,34 +85,34 @@ def retry_step(
             result = step_fn()
             if result.success:
                 if attempt > 0:
-                    logger.info(f"  ✅ {step_name} 在第 {attempt+1} 次尝试后成功")
+                    logger.info(f"  ✅ {step_name} Successful after {attempt+1}st attempt")
                 return result
             last_error = result.error or "step returned failure"
         except Exception as e:
             err_name = type(e).__name__
             last_error = f"{err_name}: {str(e)[:200]}"
             if "Disconnected" in err_name or "disconnected" in str(e).lower():
-                logger.warning(f"  ⚠️ {step_name} 页面连接断开，无法继续重试")
+                logger.warning(f"  ⚠️ {step_name} The page connection is disconnected and cannot be retried.")
                 return StepResult(False, error=last_error)
-            logger.warning(f"  ⚠️ {step_name} 异常: {last_error}")
+            logger.warning(f"  ⚠️ {step_name} Exception: {last_error}")
 
-    logger.error(f"  ❌ {step_name} 在 {1+max_retries} 次尝试后仍然失败: {last_error}")
+    logger.error(f"  ❌ {step_name} still failed after {1+max_retries} attempts: {last_error}")
     return StepResult(False, error=f"exhausted_{max_retries}_retries: {last_error}")
 
 
 def _get_recovery_advice(page, platform: str, step_name: str, error_msg: str) -> dict | None:
-    """调用 AI 诊断失败原因。AI 不可用时返回 None（降级为简单重试）。"""
+    """Call AI to diagnose the cause of failure. Return None if the AI ​​is unavailable (downgrade to simple retry)."""
     try:
         from social_uploader.tools.ai_judge import diagnose_failure
         return diagnose_failure(page, platform, step_name, error_msg)
     except Exception as e:
-        logger.debug(f"  AI 诊断不可用: {e}")
+        logger.debug(f"  AI diagnostics not available: {e}")
         return None
 
 
 def _execute_recovery(page, action: str, advice: dict):
-    """根据 AI 建议执行恢复动作。"""
-    logger.info(f"  🔧 执行恢复: {action}")
+    """Perform recovery actions based on AI recommendations."""
+    logger.info(f"  🔧 Perform recovery: {action}")
 
     if action in _NEEDS_DISMISS:
         sel = advice.get("dismiss_selector")
@@ -121,7 +121,7 @@ def _execute_recovery(page, action: str, advice: dict):
                 btn = page.ele(sel, timeout=1)
                 if btn and btn.states.has_rect:
                     btn.click()
-                    logger.info(f"  已关闭遮挡元素: {sel}")
+                    logger.info(f"  Occluded element turned off: {sel}")
                     time.sleep(1)
                     return
             except Exception:
@@ -144,7 +144,7 @@ def _execute_recovery(page, action: str, advice: dict):
     elif action in _NEEDS_WAIT:
         wait_s = advice.get("wait_seconds", 5)
         wait_s = max(2, min(wait_s, 15))
-        logger.info(f"  等待 {wait_s} 秒...")
+        logger.info(f"  Wait {wait_s} seconds...")
         time.sleep(wait_s)
 
     elif action in _NEEDS_SCROLL:
@@ -169,7 +169,7 @@ def _execute_recovery(page, action: str, advice: dict):
             pass
 
     elif action == "skip":
-        logger.info("  AI 建议跳过此步骤")
+        logger.info("  AI recommends skipping this step")
 
     else:
         time.sleep(2)

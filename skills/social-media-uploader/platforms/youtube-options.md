@@ -1,94 +1,94 @@
-# YouTube 上传配置项
+# YouTube upload configuration items
 
-AI 读取本文件后，根据"已实现"部分向用户收集信息、生成 profile JSON。
+After AI reads this file, it collects information from the user and generates profile JSON based on the "Implemented" part.
 
-## CLI 必填参数（必须收集）
+## CLI required parameters (must be collected)
 
-| 参数 | 说明 | 收集方式 | 限制 |
+| Parameters | Description | Collection method | Limitations |
 |------|------|---------|------|
-| `--video` | 视频文件路径 | 对话问 | mp4/mov/avi/mkv/webm/flv/wmv/3gp |
-| `--title` | 视频标题 | 对话问，用户没给则从文件名提取 | ≤95 字符 |
-| `--description` | 视频描述 | 对话问，用户没给则复用 title | ≤4900 字符 |
+| `--video` | Video file path | Dialogue question | mp4/mov/avi/mkv/webm/flv/wmv/3gp |
+| `--title` | Video title | Dialogue question, if the user does not give it, it will be extracted from the file name | ≤95 characters |
+| `--description` | Video description | Dialogue question, reuse title if user does not provide one | ≤4900 characters |
 
-## 已实现的 profile 配置项（可以问用户）
+## Implemented profile configuration items (you can ask the user)
 
-### 面向儿童 `youtube.made_for_kids`
+### For children `youtube.made_for_kids`
 
-- **收集方式**：AskQuestion
-- **默认值**：`false`（不面向儿童）
-- **用户没提就用默认，不主动问**
+- **Collection method**: AskQuestion
+- **Default**: `false` (not for children)
+- **Use the default if the user doesn't mention it, don't ask proactively**
 
-AskQuestion 模板：
+AskQuestion template:
 ```json
 {
   "id": "youtube_kids",
-  "prompt": "这个视频是面向儿童的内容吗？",
+  "prompt": "Is this video intended for children?",
   "options": [
-    { "id": "no", "label": "不是（默认）" },
-    { "id": "yes", "label": "是，面向儿童" }
+    { "id": "no", "label": "No (default)" },
+    { "id": "yes", "label": "Yes, for children" }
   ]
 }
 ```
 
-映射：`yes` → `"made_for_kids": true`，`no` → `"made_for_kids": false`
+Mapping: `yes` → `"made_for_kids": true`, `no` → `"made_for_kids": false`
 
-### 可见性 `youtube.visibility`
+### Visibility `youtube.visibility`
 
-- **收集方式**：AskQuestion
-- **默认值**：`"public"`
-- **用户没提就用默认，不主动问**
+- **Collection method**: AskQuestion
+- **Default**: `"public"`
+- **Use the default if the user doesn't mention it, don't ask proactively**
 
-AskQuestion 模板：
+AskQuestion template:
 ```json
 {
   "id": "youtube_visibility",
-  "prompt": "视频可见性设置？",
+  "prompt": "Video visibility settings?",
   "options": [
-    { "id": "public", "label": "公开（所有人可见，默认）" },
-    { "id": "unlisted", "label": "不公开列出（有链接才能看）" },
-    { "id": "private", "label": "私享（仅自己可见）" }
+    { "id": "public", "label": "Public (visible to everyone, default)" },
+    { "id": "unlisted", "label": "Not listed publicly (can only be viewed with a link)" },
+    { "id": "private", "label": "Private (visible only to you)" }
   ]
 }
 ```
 
-映射：直接用 option id 作为 `"visibility"` 的值。
+Mapping: directly use option id as the value of `"visibility"`.
 
-### 标签 `youtube.tags`
+### Tag `youtube.tags`
 
-- **收集方式**：对话问
-- **默认值**：`null`（不设置标签）
-- **用户没提就用默认，不主动问**
-- **格式**：逗号分隔的字符串，如 `"旅行,vlog,美食"`
+- **Collection method**: Ask in dialogue
+- **Default value**: `null` (no label set)
+- **Use the default if the user doesn't mention it, don't ask proactively**
+- **Format**: comma-separated string, such as `"travel,vlog,food"`
 
-### 分类 `youtube.category`
+### Category `youtube.category`
 
-- **收集方式**：对话问
-- **默认值**：`null`（不设置分类）
-- **用户没提就用默认，不主动问**
-- **可选值**：Entertainment, Education, Science & Technology, People & Blogs, Music, Gaming 等
+- **Collection method**: Ask in dialogue
+- **Default value**: `null` (no classification set)
+- **Use the default if the user doesn't mention it, don't ask proactively**
+- **Optional values**: Entertainment, Education, Science & Technology, People & Blogs, Music, Gaming, etc.
 
-## CLI 可选参数
+## CLI optional parameters
 
-| 参数 | 说明 |
+| Parameters | Description |
 |------|------|
-| `--no-publish` | 仅填表单不发布，用户说"预览""不发布"时加上 |
-| `--resume-from` | 从断点恢复，AI 自动修复时使用，不需要问用户 |
-| `--profile` | 配置文件路径，AI 生成后自动传入 |
+| `--no-publish` | Just fill in the form without publishing, add it when the user says "Preview" or "Don't publish" |
+| `--resume-from` | Recovery from breakpoints, used when AI automatically repairs, no need to ask the user |
+| `--profile` | Configuration file path, automatically passed in after AI is generated |
 
-## 生成的 profile JSON 示例
+## Generated profile JSON example
 
-用户说"上传到 YouTube，面向儿童，不公开，加标签旅行和美食"时生成：
+Generated when user says "Upload to YouTube, made for kids, private, tagged travel and food":
 ```json
 {
   "youtube": {
     "made_for_kids": true,
     "visibility": "unlisted",
-    "tags": "旅行,美食"
+    "tags": "travel, food"
   }
 }
 ```
 
-用户说"上传到 YouTube，明天上午10点定时发布"时生成：
+When the user says "Upload to YouTube, it will be published at 10 am tomorrow":
 ```json
 {
   "youtube": {
@@ -97,35 +97,35 @@ AskQuestion 模板：
 }
 ```
 
-用户什么都没说（全用默认）时：不传 `--profile`，代码自动用 default.json。
+When the user says nothing (all defaults are used): do not pass `--profile`, and the code automatically uses default.json.
 
-### 定时发布 `youtube.schedule`
+### Regular release `youtube.schedule`
 
-- **收集方式**：对话问
-- **默认值**：`null`（立即发布）
-- **用户没提就用默认，不主动问**
-- **格式**：`"YYYY-MM-DD HH:MM"`，如 `"2026-04-08 10:00"`
-- **前置条件**：定时发布会自动将可见性设为 PUBLIC（公开）
-- **安全门控**：如果定时设置失败，脚本会中止发布，防止视频立即公开
+- **Collection method**: Ask in dialogue
+- **Default**: `null` (for immediate release)
+- **Use the default if the user doesn't mention it, don't ask proactively**
+- **Format**: `"YYYY-MM-DD HH:MM"`, such as `"2026-04-08 10:00"`
+- **Precondition**: Scheduled press conferences automatically set visibility to PUBLIC (public)
+- **Security Gating**: If the timing setting fails, the script will abort publishing, preventing the video from being made public immediately
 
-AskQuestion 模板（仅用户主动提及定时发布时使用）：
+AskQuestion template (only used when the user actively mentions scheduled publishing):
 ```json
 {
   "id": "youtube_schedule",
-  "prompt": "YouTube 定时发布时间？",
+  "prompt": "YouTube scheduled release time?",
   "options": [
-    { "id": "now", "label": "立即发布（默认）" },
-    { "id": "custom", "label": "指定时间（请在对话中补充 YYYY-MM-DD HH:MM）" }
+    { "id": "now", "label": "Publish immediately (default)" },
+    { "id": "custom", "label": "Specify time (please add YYYY-MM-DD HH:MM in the conversation)" }
   ]
 }
 ```
 
-映射：`now` → 不设 schedule，`custom` → `"schedule": "用户给出的时间"`
+Mapping: `now` → no schedule, `custom` → `"schedule": "user-provided time"`
 
-## 规划中（代码暂未实现，不要问用户）
+## Under planning (the code has not been implemented yet, don’t ask users)
 
-以下功能在 default.json 中没有对应字段，代码也没有处理逻辑。
-**AI 不得就这些选项向用户提问或生成配置。** 如果用户主动提到，应回复"此功能暂未实现"。
+The following functions have no corresponding fields in default.json, and the code has no processing logic.
+**AI may not question users or generate configurations about these options. ** If the user actively mentions it, they should reply "This function has not been implemented yet".
 
-- `playlist` — 播放列表
-- `license` — 授权类型
+- `playlist` — Playlist
+- `license` — authorization type

@@ -4,9 +4,9 @@ import json
 import logging
 
 
-# region agent log — Debug session 66b267 (TK confirm 调试)
+# region agent log — Debug session 66b267 (TK confirm debugging)
 def _dbg_log_tk(loc, msg, data, hyp, run_id="initial"):
-    """临时 NDJSON 调试日志（tiktok confirm），写到 debug-social-upload.log。"""
+    """Temporary NDJSON debug log (tiktok confirm), written to debug-social-upload.log."""
     try:
         rec = {
             "sessionId": "66b267", "runId": run_id, "hypothesisId": hyp,
@@ -107,44 +107,44 @@ from social_uploader.tools.pattern_checker import check_signals, check_error_sig
 logger = logging.getLogger(__name__)
 
 """
-代码地图（AI 修改时先看这里定位代码位置）：
+Code map (when making AI modifications, look here first to locate the code location):
 
-步骤名          | 做什么                     | 代码位置
+Step name | What to do | Code location
 ----------------|----------------------------|---------------------------
-validate        | 校验视频文件               | upload_tiktok() 开头
-connect         | 连接浏览器                 | upload_tiktok() 中段
-login           | 打开上传页 + 检测登录      | _do_upload_tiktok() → "阶段 1"
-file_inject     | 注入视频文件               | _do_upload_tiktok() → "阶段 3"
-wait_upload     | 等待 Post 按钮 enabled     | _do_upload_tiktok() → "等待上传就绪"
-form_fill       | 填写标题和描述             | _do_upload_tiktok() → "阶段 4"
-cover           | 上传自定义封面             | _upload_cover_image() 独立函数
-scroll          | 滚动到底部                 | _do_upload_tiktok() → "阶段 5"
-options         | 设置平台选项               | _set_tiktok_options() → "阶段 5.5"
-copyright       | 等待版权检查完成           | _do_upload_tiktok() → "阶段 6"
-publish         | 点击发布按钮               | _do_upload_tiktok() → "阶段 7"
-confirm         | 等待发布成功确认           | _do_upload_tiktok() → "阶段 9"
+validate | Verify video file | Start with upload_tiktok()
+connect | connect browser | upload_tiktok() middle section
+login | Open upload page + check login | _do_upload_tiktok() → "Phase 1"
+file_inject | Inject video file | _do_upload_tiktok() → "Phase 3"
+wait_upload | Wait for Post button enabled | _do_upload_tiktok() → "Wait for upload to be ready"
+form_fill | Fill in title and description | _do_upload_tiktok() → "Phase 4"
+cover | Upload custom cover | _upload_cover_image() independent function
+scroll | scroll to bottom | _do_upload_tiktok() → "Phase 5"
+options | Set platform options | _set_tiktok_options() → "Phase 5.5"
+copyright | Wait for copyright check to complete | _do_upload_tiktok() → "Phase 6"
+publish | Click the publish button | _do_upload_tiktok() → "Phase 7"
+confirm | Wait for confirmation of successful release | _do_upload_tiktok() → "Phase 9"
 
-本文件内的辅助函数（仅 TikTok 步骤编排相关）：
-  _check_upload_error()  — 检测上传错误弹窗
-  _dismiss_error_popup() — 关闭上传错误弹窗
-  _handle_popups()       — 关闭各种干扰弹窗
-  should_skip()          — resume-from 跳步判断（来自 uploaders.__init__）
+Auxiliary functions in this file (only related to TikTok step arrangement):
+  _check_upload_error() — Detect upload error pop-up window
+  _dismiss_error_popup() — Close the upload error popup window
+  _handle_popups() — close various distracting popups
+  should_skip() — resume-from skip judgment (from uploaders.__init__)
 
-TikTok 平台专属辅助（位于 uploaders/tiktok_helpers.py，禁止其他平台 import）：
-  _set_toggle()              — 通过标签文本设置 toggle 开关
-  _set_checkbox()            — 通过标签文本设置自定义 checkbox
-  _set_tiktok_visibility()   — 设置可见性下拉（recipe 配方 + 三层兜底）
-  _set_tiktok_schedule()     — 设置定时发布（recipe 配方 + 三层兜底）
-  _set_tiktok_options()      — 统一入口，按 config 设置所有选项
+TikTok platform-specific helpers (located at uploaders/tiktok_helpers.py, import from other platforms is prohibited):
+  _set_toggle() — Set the toggle switch via label text
+  _set_checkbox() — Set a custom checkbox via label text
+  _set_tiktok_visibility() — Set the visibility drop-down (recipe recipe + three-layer cover)
+  _set_tiktok_schedule() — Set scheduled release (recipe recipe + three-layer guarantee)
+  _set_tiktok_options() — Unified entrance, set all options according to config
 
-已实现的 profile 配置项（profile.tiktok.*）：
-  visibility       — 可见性: everyone/friends/only_me（默认 everyone）
-  schedule         — 定时发布: null=立即, "YYYY-MM-DD HH:MM"=定时
-  allow_comments   — 允许评论（默认 true）
-  allow_reuse      — 允许二创（默认 true）
-  disclose_content — 内容披露（默认 false）
-  ai_generated     — AI 生成标记（默认 false）
-  high_quality     — 高画质上传（默认 true）
+Implemented profile configuration items (profile.tiktok.*):
+  visibility — Visibility: everyone/friends/only_me (default everyone)
+  schedule — scheduled release: null=immediately, "YYYY-MM-DD HH:MM"=scheduled
+  allow_comments — Allow comments (default true)
+  allow_reuse — Allow re-creation (default true)
+  disclose_content — Content disclosure (default false)
+  ai_generated — AI generated tags (default false)
+  high_quality — High quality upload (default true)
 """
 
 TIKTOK_UPLOAD_URL_PREFIX = "https://www.tiktok.com"
@@ -155,45 +155,45 @@ STEPS = [
 
 
 def _check_upload_error(page):
-    """检测 TikTok 上传错误弹窗，从 state_patterns.json 读取信号。"""
+    """Detect TikTok upload error pop-ups and read signals from state_patterns.json."""
     return check_error_signals(page, "tiktok", "wait_upload")
 
 
 def _dismiss_error_popup(page):
-    """关闭上传错误弹窗，从 state_patterns.json 读取关闭选择器。"""
+    """Close the upload error pop-up window and read the close selector from state_patterns.json."""
     dismiss_error_popup(page, "tiktok", "wait_upload")
 
 
 def _handle_popups(page):
-    """从 state_patterns.json 读取弹窗关闭选择器。"""
+    """Read the popup closing selector from state_patterns.json."""
     dismiss_popups(page, "tiktok", max_rounds=1)
 
 
 def _handle_continue_to_post_dialog(page, total_wait_s: int = 8) -> bool:
-    """专用快速处理：TikTok「Continue to post?」审核弹窗 → 点 Post now。
+    """Dedicated quick processing: TikTok "Continue to post?" review pop-up window → click Post now.
 
-    弹窗文案：
+    Pop-up window copy:
         Continue to post?
         We're still checking your video for potential issues.
         Do you want to continue posting before the check is complete?
-    按钮：[Cancel] [Post now]
+    Button: [Cancel] [Post now]
 
-    这个弹窗只在视频审核未完成就点 Post 时出现，几乎一定在点击后 0-3 秒内弹出。
-    必须主动点 Post now 才能继续发布。
+    This pop-up window only appears when you click Post before the video review is completed, and it will almost certainly pop up within 0-3 seconds after clicking.
+    You must actively click Post now to continue publishing.
 
-    策略：紧贴点击的"快速试探"轮询（300ms 间隔，默认 8s）
-    - URL 跳转 / 视频已发布 toast / Post 按钮消失 → 立即退出（已发布，不需要本函数）
-    - 弹窗出现 → 立即点击 Post now
-    - 8s 内都没弹窗也没成功信号 → 放手交给后续 wait_for_publish_confirmation 兜底
+    Strategy: "Quick Probe" polling on clicks (300ms interval, default 8s)
+    - URL jump/Video has been published toast/Post button disappears → Exit immediately (has been published, this function is not needed)
+    - A pop-up window appears → Click Post now
+    - There is no pop-up window or success signal within 8s → Let it go and leave it to the follow-up wait_for_publish_confirmation to find out the details
 
-    为什么 8s 而不是 30s？
-    - 极端延迟弹窗（>8s）由 wait_for_publish_confirmation 的逐轮 _find_dialog
-      + _try_whitelist_click 兜底（state_patterns.json 白名单含 "Post now"）
-    - 顺畅发布路径下不再傻等 30 秒，整体流程缩短 20+ 秒
+    Why 8s and not 30s?
+    - Extremely delayed pop-ups (>8s) by wait_for_publish_confirmation's round-by-round _find_dialog
+      + _try_whitelist_click (state_patterns.json whitelist contains "Post now")
+    - No more waiting for 30 seconds in a smooth release path, and the overall process is shortened by 20+ seconds
 
-    返回：True = 检测到弹窗并成功点击 Post now；False = 没出现弹窗（已发布或超时）
+    Return: True = Pop-up window is detected and Post now is successfully clicked; False = No pop-up window appears (posted or timed out)
 
-    注意：必须紧贴 post_btn.click() 调用，中间不能插任何 sleep，否则可能错过弹窗。
+    Note: The post_btn.click() call must be followed closely, and no sleep can be inserted in the middle, otherwise the pop-up window may be missed.
     """
     dialog_xpath = (
         "xpath://*[contains(@class,'TUXModal') or @role='dialog' or @role='alertdialog']"
@@ -216,37 +216,40 @@ def _handle_continue_to_post_dialog(page, total_wait_s: int = 8) -> bool:
     while time.time() < deadline:
         elapsed = time.time() - started_at
 
-        # 1) URL 已跳转 → 已发布
+        # 1) URL has been redirected → published
         try:
             cur_url = (page.url or "").lower()
         except Exception:
             cur_url = ""
         if "/content" in cur_url or "/manage" in cur_url:
             if elapsed > 0.5:
-                logger.info(f"  ✅ URL 已跳转 ({cur_url[:60]})，无需 Continue-to-post 处理 (耗时 {elapsed:.1f}s)")
+                logger.info(f"  ✅ The URL has been redirected ({cur_url[:60]}), no Continue-to-post processing is required (it takes {elapsed:.1f}s)")
             return False
 
-        # 2) 检测「Video published」toast → 已发布
+        # 2) Detect "Video published" toast → Published
         try:
             toast = page.ele("text:Video published", timeout=0.1)
             if toast and toast.states.has_rect:
-                logger.info(f"  ✅ 已检测到「Video published」toast，无需 Continue-to-post 处理 (耗时 {elapsed:.1f}s)")
+                logger.info(
+                    f'  ✅ Detected the "Video published" toast; no additional post-processing '
+                    f"is required ({elapsed:.1f}s)"
+                )
                 return False
         except Exception:
             pass
 
-        # 3) 主 Post 按钮消失了 → 表单切到 sharing/processing 状态，发布流程已推进
-        # 这是新加的早期退出信号：1.5s 后才检查（给点击留反应时间），避免误判
+        # 3) The main Post button disappears → the form switches to the sharing/processing state, and the publishing process has been advanced.
+        # This is a newly added early exit signal: check after 1.5s (leave reaction time for clicks) to avoid misjudgment
         if elapsed >= 1.5:
             try:
                 main_post = page.ele(main_post_xpath, timeout=0.1)
             except Exception:
                 main_post = None
             if not main_post or (main_post and not main_post.states.has_rect):
-                logger.info(f"  ✅ 主 Post 按钮已消失（页面状态推进），无 Continue-to-post 弹窗 (耗时 {elapsed:.1f}s)")
+                logger.info(f"  ✅ The main Post button has disappeared (the page status is advanced), and there is no Continue-to-post pop-up window (time consuming {elapsed:.1f}s)")
                 return False
 
-        # 4) 检测目标弹窗
+        # 4) Detect target pop-up window
         try:
             dialog = page.ele(dialog_xpath, timeout=0.1)
         except Exception:
@@ -254,18 +257,24 @@ def _handle_continue_to_post_dialog(page, total_wait_s: int = 8) -> bool:
 
         if not dialog:
             if log_first:
-                logger.info(f"  ⏳ 快速试探「Continue to post?」审核弹窗（{POLL_INTERVAL}s 轮询，最长 {total_wait_s}s）")
+                logger.info(
+                    f'  ⏳ Watching for the "Continue to post?" review dialog '
+                    f"(poll every {POLL_INTERVAL}s for up to {total_wait_s}s)"
+                )
                 log_first = False
             time.sleep(POLL_INTERVAL)
             continue
 
-        # 找到弹窗 → 立即点击
+        # Find the pop-up window → click now
         try:
             dialog_text = (dialog.text or "").strip()[:200]
         except Exception:
             dialog_text = ""
-        logger.info(f"  🔔 检测到「Continue to post?」审核弹窗 (出现于点击后 {elapsed:.1f}s)")
-        logger.info(f"     弹窗内容: {dialog_text[:100]}")
+        logger.info(
+            f'  🔔 Detected the "Continue to post?" review dialog '
+            f"{elapsed:.1f}s after clicking Post"
+        )
+        logger.info(f"     Pop-up content: {dialog_text[:100]}")
 
         btn = None
         for post_now_xpath in post_now_selectors:
@@ -281,13 +290,13 @@ def _handle_continue_to_post_dialog(page, total_wait_s: int = 8) -> bool:
 
         try:
             btn.click()
-            logger.info(f"  ✅ 立即点击 [Post now]（响应延迟 {elapsed:.1f}s）")
+            logger.info(f"  ✅ Click [Post now] (response delay {elapsed:.1f}s)")
         except Exception as e:
-            logger.warning(f"  ⚠️ 点击 [Post now] 失败: {e}，{POLL_INTERVAL}s 后重试")
+            logger.warning(f"  ⚠️Click [Post now] failed: {e}, try again after {POLL_INTERVAL}s")
             time.sleep(POLL_INTERVAL)
             continue
 
-        # 等弹窗消失，最多 5 秒
+        # Wait for the pop-up window to disappear, up to 5 seconds
         for _ in range(25):
             time.sleep(0.2)
             try:
@@ -295,27 +304,27 @@ def _handle_continue_to_post_dialog(page, total_wait_s: int = 8) -> bool:
             except Exception:
                 still = None
             if not still:
-                logger.info("  ✅ 弹窗已关闭，发布提交成功")
+                logger.info("  ✅ The pop-up window has been closed and the publishing submission was successful.")
                 return True
-        logger.info("  ⏳ 弹窗未消失，继续轮询尝试")
+        logger.info("  ⏳ The pop-up window has not disappeared, please continue to poll.")
 
-    logger.info(f"  ℹ️ {total_wait_s}s 快速试探未发现 Continue-to-post 弹窗，交给后续兜底")
+    logger.info(f"  ℹ️ {total_wait_s}s Quick test did not find the Continue-to-post pop-up window, leaving it to the follow-up")
     return False
 
 
 def _upload_cover_image(page, target, cover_path):
-    """上传自定义封面图到 TikTok"""
+    """Upload a custom cover image to TikTok"""
     if not cover_path:
         return
     if not os.path.exists(cover_path):
-        logger.warning(f"⚠️ 封面图文件不存在: {cover_path}，跳过封面设置")
+        logger.warning(f"⚠️The cover image file does not exist: {cover_path}, skip the cover setting")
         return
     ext = os.path.splitext(cover_path)[1].lower()
     if ext not in {'.jpg', '.jpeg', '.png', '.webp'}:
-        logger.warning(f"⚠️ 封面图格式不支持 '{ext}'，仅支持 jpg/png/webp，跳过封面设置")
+        logger.warning(f"⚠️ The cover image format does not support '{ext}', only jpg/png/webp is supported, and the cover setting is skipped")
         return
 
-    logger.info(f"🖼️ 正在设置自定义封面图: {os.path.basename(cover_path)}")
+    logger.info(f"🖼️ Setting custom cover image: {os.path.basename(cover_path)}")
 
     cover_selectors = [
         'text:Edit cover', 'text:编辑封面',
@@ -336,12 +345,12 @@ def _upload_cover_image(page, target, cover_path):
         try:
             cover_btn.click()
             time.sleep(1)
-            logger.info("  ✅ 已点击封面编辑区域")
+            logger.info("  ✅Clicked the cover editing area")
         except Exception as e:
-            logger.warning(f"  ⚠️ 点击封面编辑失败: {e}")
+            logger.warning(f"  ⚠️ Failed to click on the cover to edit: {e}")
             return
     else:
-        logger.warning("  ⚠️ 未找到封面编辑入口，跳过封面设置")
+        logger.warning("  ⚠️ The cover editing entrance was not found, skipping the cover settings")
         return
 
     cover_input = page.ele(
@@ -372,11 +381,11 @@ def _upload_cover_image(page, target, cover_path):
     if cover_input:
         accept_attr = cover_input.attr('accept') or ''
         if 'video' in accept_attr and 'image' not in accept_attr:
-            logger.warning("  ⚠️ 找到的文件输入是视频类型而非图片类型，跳过封面上传以避免误操作")
+            logger.warning("  ⚠️ The file input found is a video type rather than an image type, skip uploading the cover to avoid misoperation")
             return
 
         cover_input.input(cover_path)
-        logger.info("  ✅ 封面图已上传")
+        logger.info("  ✅ Cover image has been uploaded")
         time.sleep(2)
 
         confirm_selectors = ['text:Done', 'text:完成', 'text:Save', 'text:保存', 'text:Confirm', 'text:确认']
@@ -386,13 +395,13 @@ def _upload_cover_image(page, target, cover_path):
                 try:
                     if btn.states.has_rect:
                         btn.click()
-                        logger.info("  ✅ 已确认封面设置")
+                        logger.info("  ✅ Cover settings confirmed")
                         time.sleep(1)
                         break
                 except Exception:
                     pass
     else:
-        logger.warning("  ⚠️ 未找到图片上传入口（TikTok 封面可能仅支持从视频帧选择），跳过封面上传")
+        logger.warning("  ⚠️ Image upload entry not found (TikTok cover may only support selection from video frames), skip cover upload")
 
 
 def upload_tiktok(video_path, title, description, no_publish=False, cover_path=None, run_id=None, resume_from=None, profile=None, account=None):
@@ -407,18 +416,18 @@ def upload_tiktok(video_path, title, description, no_publish=False, cover_path=N
 
     ok, err_msg = validate_video_file(video_path, platform="tiktok")
     if not ok:
-        logger.error(f"❌ 视频预校验失败: {err_msg}")
+        logger.error(f"❌ Video pre-verification failed: {err_msg}")
         log_step("validate", "fail", error="file_rejected", detail=err_msg)
         return False
     file_size = os.path.getsize(video_path)
-    logger.info(f"✅ 视频预校验通过 ({os.path.basename(video_path)}, {file_size/1024:.0f}KB)")
+    logger.info(f"✅ Video pre-verification passed ({os.path.basename(video_path)}, {file_size/1024:.0f}KB)")
     log_step("validate", "ok", file=os.path.basename(video_path), size_kb=round(file_size / 1024))
 
     data_dir = None
     if account is not None:
         from social_uploader.account_manager import get_data_dir
         data_dir = get_data_dir(account)
-        logger.info(f"👤 使用账号: {account}")
+        logger.info(f"👤 User account: {account}")
 
     try:
         if resume_from:
@@ -426,9 +435,9 @@ def upload_tiktok(video_path, title, description, no_publish=False, cover_path=N
             platform_tab = find_platform_tab(ctrl, TIKTOK_UPLOAD_URL_PREFIX)
             if platform_tab:
                 work = platform_tab
-                logger.info(f"🔄 找到 TikTok 页面标签，将从 {resume_from} 步骤恢复")
+                logger.info(f"🔄 Find the TikTok page tag, which will be restored from {resume_from} steps")
             else:
-                logger.warning("⚠️ 未找到 TikTok 页面标签，将从头执行")
+                logger.warning("⚠️ TikTok page tag not found, will be executed from scratch")
                 work = ctrl.new_tab(url="about:blank")
                 work.set.auto_handle_alert(accept=True)
                 resume_from = None
@@ -436,7 +445,7 @@ def upload_tiktok(video_path, title, description, no_publish=False, cover_path=N
             ctrl, work, baseline_tab_ids, _ = connect_browser(data_dir=data_dir)
         log_step("connect", "ok", port=9222)
     except Exception as e:
-        logger.error(f"❌ 连接浏览器失败，请确保运行了 start_chrome_debug.sh\n   {e}")
+        logger.error(f"❌ Failed to connect to the browser, please make sure you run start_chrome_debug.sh\n {e}")
         log_step("connect", "fail", error="unknown", detail=str(e)[:200])
         return False
 
@@ -450,26 +459,26 @@ def upload_tiktok(video_path, title, description, no_publish=False, cover_path=N
             write_success(run_id, "tiktok", elapsed_s=round(time.time() - _t0))
             cleanup_tabs(ctrl, baseline_tab_ids)
         else:
-            logger.info("💡 任务窗口已保留，可用 --resume-from 从断点恢复")
+            logger.info("💡 The task window has been retained and can be resumed from the breakpoint with --resume-from")
 
 
 def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, description, no_publish, cover_path, run_id, resume_from, config):
     platform = "tiktok"
     page = work
 
-    # resume-from 页面状态校验
+    # resume-from page status verification
     if resume_from:
         current_url = page.url or ""
         if TIKTOK_UPLOAD_URL_PREFIX not in current_url:
-            logger.warning(f"⚠️ 页面已离开 TikTok ({current_url[:60]}...)，忽略 resume-from，从头执行")
+            logger.warning(f"⚠️ The page has left TikTok ({current_url[:60]}...), ignore resume-from, and execute from the beginning")
             log_step("resume_check", "fail", reason="page_url_changed", url=current_url[:100])
             resume_from = None
         else:
             log_step("resume_check", "ok", resume_from=resume_from)
 
-    # === 阶段 1：打开 TikTok 上传页 ===
+    # === Stage 1: Open TikTok upload page ===
     if not should_skip("login", resume_from, STEPS):
-        logger.info("🌐 正在访问 TikTok 上传页...")
+        logger.info("🌐 Visiting TikTok upload page...")
         _target_url = 'https://www.tiktok.com/tiktokstudio/upload?from=upload'
         for _nav_attempt in range(3):
             try:
@@ -478,26 +487,26 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
             except Exception as _nav_err:
                 _err_name = type(_nav_err).__name__
                 if _nav_attempt < 2:
-                    logger.warning(f"  ⚠️ 页面导航失败 ({_err_name})，重连中... (尝试 {_nav_attempt+2}/3)")
+                    logger.warning(f"  ⚠️ Page navigation failed ({_err_name}), reconnecting... (try {_nav_attempt+2}/3)")
                     time.sleep(2)
                     try:
                         reconnected_tab = find_platform_tab(ctrl, "tiktok.com")
                         if reconnected_tab:
                             page = reconnected_tab
                             work = reconnected_tab
-                            logger.info("  🔄 已重连到 TikTok 标签")
+                            logger.info("  🔄 Reconnected to TikTok tag")
                         else:
                             page = ctrl.new_tab(url=_target_url)
                             work = page
-                            logger.info("  🔄 已打开新标签")
+                            logger.info("  🔄 New tab opened")
                             break
                     except Exception:
                         page = ctrl.new_tab(url=_target_url)
                         work = page
-                        logger.info("  🔄 重连失败，已打开新标签")
+                        logger.info("  🔄 Failed to reconnect, a new tab has been opened")
                         break
                 else:
-                    logger.error(f"  ❌ 页面导航 3 次均失败: {_err_name}")
+                    logger.error(f"  ❌ Page navigation failed 3 times: {_err_name}")
                     log_step("login", "fail", error="page_disconnected", detail=str(_nav_err)[:200])
                     report_failure(page, run_id, platform, "login", "page_disconnected", "", detail=str(_nav_err)[:200])
                     return False
@@ -522,11 +531,11 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
         _handle_popups(page)
         dismiss_interfering_overlays(ctrl, work, baseline_tab_ids)
 
-    # === 阶段 2：页面状态检测 ===
+    # === Phase 2: Page status detection ===
     if not should_skip("page_check", resume_from, STEPS):
         has_page_error, page_error_desc = check_page_error(page, platform)
         if has_page_error:
-            logger.error(f"❌ TikTok 平台异常: {page_error_desc}")
+            logger.error(f"❌ TikTok platform exception: {page_error_desc}")
             log_step("page_check", "fail", error="platform_unavailable", detail=page_error_desc)
             report_failure(page, run_id, platform, "page_check", "platform_unavailable", safe_page_url(page),
                            detail=page_error_desc)
@@ -535,16 +544,16 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
 
         preflight_check(page, platform)
 
-    # === 阶段 3：注入视频文件 ===
+    # === Stage 3: Inject video file ===
     if not should_skip("file_inject", resume_from, STEPS):
         _handle_popups(page)
-        logger.info("📁 正在注入视频文件...")
+        logger.info("📁 Injecting video files...")
         iframe = page.get_frame('@src^https://www.tiktok.com/creator#/upload')
         target = iframe if iframe else page
 
-        # 残留检测：上次上传的视频卡片若还在，<input type="file"> 会被销毁，导致 file_input 怎么找都找不到
-        # 表现为：页面有 data-e2e="upload_status_container" 卡片或 [Replace] 按钮
-        # 解决：刷新当前 upload 页 → 回到空白状态 → 再找 file_input
+        # Residual detection: If the video card uploaded last time is still there, <input type="file"> will be destroyed, resulting in file_input not being found no matter how you look for it.
+        # The performance is as follows: the page has data-e2e="upload_status_container" card or [Replace] button
+        # Solution: Refresh the current upload page → return to the blank state → look for file_input again
         try:
             stale_card = target.ele('@data-e2e=upload_status_container', timeout=0.5)
         except Exception:
@@ -554,7 +563,7 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
         except Exception:
             replace_btn = None
         if stale_card or replace_btn:
-            logger.warning("  ⚠️ 检测到 upload 页面残留上次的视频卡片，刷新页面以清理状态")
+            logger.warning("  ⚠️ It is detected that the last video card remains on the upload page, refresh the page to clean up the status")
             try:
                 _clean_url = "https://www.tiktok.com/tiktokstudio/upload?from=upload"
                 page.get(_clean_url)
@@ -563,19 +572,19 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
                 _handle_popups(page)
                 iframe = page.get_frame('@src^https://www.tiktok.com/creator#/upload')
                 target = iframe if iframe else page
-                logger.info("  ✅ upload 页面已重置")
+                logger.info("  ✅ upload page has been reset")
             except Exception as _e:
-                logger.warning(f"  ⚠️ 刷新 upload 页失败: {_e}，继续按原策略尝试")
+                logger.warning(f"  ⚠️ Failed to refresh the upload page: {_e}, continue to try according to the original strategy")
 
         file_input, sel = find_element(target, platform, "file_input", timeout=15)
         if not file_input:
-            logger.error("❌ 未找到文件上传入口，可能页面结构已变化。")
-            log_step("file_inject", "fail", error="selector_not_found", detail="file_input 未找到")
+            logger.error("❌ The file upload entry was not found. The page structure may have changed.")
+            log_step("file_inject", "fail", error="selector_not_found", detail="file_input not found")
             report_failure(page, run_id, platform, "file_inject", "selector_not_found", safe_page_url(page),
                            selectors_tried="file_input")
             return False
 
-        # --- 确保拿到的是真正的 <input type="file">，而非包装容器 ---
+        # --- Make sure you get the real <input type="file">, not the packaging container ---
         try:
             _fi_tag = file_input.tag
             _fi_type = file_input.attr('type')
@@ -583,20 +592,20 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
             _fi_tag = _fi_type = None
 
         if _fi_tag != "input" or _fi_type != "file":
-            logger.info(f"  ⚠️ 定位到的元素不是 <input type='file'> (tag={_fi_tag}, type={_fi_type})，在其内部/页面中查找真正的 file input...")
+            logger.info(f"  ⚠️ The located element is not <input type='file'> (tag={_fi_tag}, type={_fi_type}), look for the real file input inside/in the page...")
             real_fi = None
-            # 先在定位到的元素内部找
+            # First search inside the positioned element
             try:
                 real_fi = file_input.ele("xpath:.//input[@type='file']", timeout=2)
             except Exception:
                 pass
-            # 再在 target 范围内找
+            # Then search within the target range
             if not real_fi:
                 try:
                     real_fi = target.ele("xpath://input[@type='file']", timeout=3)
                 except Exception:
                     pass
-            # 最后在 page 范围内找
+            # Finally, find it in the page scope
             if not real_fi:
                 try:
                     real_fi = page.ele("xpath://input[@type='file']", timeout=3)
@@ -604,16 +613,16 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
                     pass
 
             if real_fi:
-                logger.info(f"  ✅ 找到真正的 file input (tag={real_fi.tag}, type={real_fi.attr('type')})")
+                logger.info(f"  ✅ Find the real file input (tag={real_fi.tag}, type={real_fi.attr('type')})")
                 file_input = real_fi
             else:
-                logger.warning("  ⚠️ 未找到真正的 <input type='file'>，尝试用原始元素注入...")
+                logger.warning("  ⚠️ No real <input type='file'> found, try injecting with original element...")
 
-        logger.info(f"   注入文件: {video_path}")
+        logger.info(f"   Injection file: {video_path}")
         try:
             file_input.input(video_path)
         except Exception as e:
-            logger.error(f"  ❌ 文件注入失败: {e}")
+            logger.error(f"  ❌ File injection failed: {e}")
             log_step("file_inject", "fail", error="inject_exception", detail=str(e)[:200])
             report_failure(page, run_id, platform, "file_inject", "inject_exception", safe_page_url(page),
                            detail=str(e)[:200])
@@ -623,18 +632,18 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
         iframe = page.get_frame('@src^https://www.tiktok.com/creator#/upload')
         target = iframe if iframe else page
 
-    # === 等待上传就绪（通过 Post 按钮 enabled 状态判断）===
+    # === Waiting for the upload to be ready (judged by the enabled status of the Post button) ===
     if not should_skip("wait_upload", resume_from, STEPS):
-        logger.info("⏳ 等待视频上传处理...")
+        logger.info("⏳ Waiting for the video upload to be processed...")
         upload_ready = False
         for i in range(120):
             time.sleep(1)
 
             has_error, error_desc = _check_upload_error(page)
             if has_error:
-                logger.error(f"❌ TikTok 上传错误: {error_desc}")
+                logger.error(f"❌ TikTok upload error: {error_desc}")
                 _dismiss_error_popup(page)
-                logger.info("   已关闭错误弹窗。此视频无法上传，请检查视频文件是否完整、格式是否正确。")
+                logger.info("   Error popup has been closed. This video cannot be uploaded. Please check whether the video file is complete and in the correct format.")
                 log_step("wait_upload", "fail", error="file_rejected", detail=error_desc)
                 report_failure(page, run_id, platform, "wait_upload", "file_rejected", safe_page_url(page), detail=error_desc)
                 return False
@@ -642,36 +651,36 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
             editor_ready, _ = check_signals(target, platform, "wait_upload", "editor_ready", timeout=1)
             if not editor_ready:
                 if i % 5 == 4:
-                    logger.info(f"   等待编辑器出现... ({i+1}秒)")
+                    logger.info(f"   Wait for the editor to appear... ({i+1} seconds)")
                 continue
 
             post_btn, _ = find_element(page, platform, "post_button", timeout=1)
             if post_btn and post_btn.attr('aria-disabled') != 'true' and post_btn.attr('data-disabled') != 'true':
                 upload_ready = True
-                logger.info(f"   ✅ Post 按钮已就绪，视频处理完成 (耗时约 {i+1} 秒)")
+                logger.info(f"   ✅ The Post button is ready and the video processing is completed (it takes about {i+1} seconds)")
                 break
 
             if i % 10 == 9:
-                logger.info(f"   视频处理中... ({i+1}秒)")
+                logger.info(f"   Video processing... ({i+1} seconds)")
 
         if not upload_ready:
             has_error, error_desc = _check_upload_error(page)
             if has_error:
-                logger.error(f"❌ TikTok 上传错误: {error_desc}")
+                logger.error(f"❌ TikTok upload error: {error_desc}")
                 _dismiss_error_popup(page)
                 log_step("wait_upload", "fail", error="file_rejected", detail=error_desc)
                 report_failure(page, run_id, platform, "wait_upload", "file_rejected", safe_page_url(page), detail=error_desc)
                 return False
-            logger.warning("   ⚠️ 等待超时(120秒)，继续尝试...")
+            logger.warning("   ⚠️ Waiting for timeout (120 seconds), continue trying...")
         log_step("wait_upload", "ok" if upload_ready else "warn_timeout")
         _handle_popups(page)
         dismiss_interfering_overlays(ctrl, work, baseline_tab_ids)
 
-    # === 阶段 4：填写标题和描述 ===
+    # === Stage 4: Fill in title and description ===
     if not should_skip("form_fill", resume_from, STEPS):
         _handle_popups(page)
         dismiss_interfering_overlays(ctrl, work, baseline_tab_ids)
-        logger.info("📝 正在填写标题和描述...")
+        logger.info("📝 Filling in title and description...")
         full_text = f"{title or ''}\n\n{description or ''}".strip()[:3900]
 
         caption_box, _ = find_element(target, platform, "caption_box", timeout=15)
@@ -680,55 +689,55 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
             try:
                 caption_box.clear()
                 caption_box.input(full_text)
-                logger.info("✅ 标题和描述已填写")
+                logger.info("✅ Title and description filled in")
             except Exception as e:
-                logger.warning(f"⚠️ 填写失败: {e}")
+                logger.warning(f"⚠️ Failed to fill in: {e}")
         else:
-            logger.warning("⚠️ 未找到描述输入框，跳过。")
-            log_step("form_fill", "fail", error="selector_not_found", detail="caption_box 未找到")
+            logger.warning("⚠️ Description input box not found, skip.")
+            log_step("form_fill", "fail", error="selector_not_found", detail="caption_box not found")
             report_failure(page, run_id, platform, "form_fill", "selector_not_found", safe_page_url(page),
                            selectors_tried="caption_box")
             return False
         log_step("form_fill", "ok")
 
-    # === 阶段 4.5：上传自定义封面图 ===
+    # === Stage 4.5: Upload custom cover image ===
     if not should_skip("cover", resume_from, STEPS):
         if cover_path:
             _upload_cover_image(page, target, cover_path)
         log_step("cover", "ok", has_cover=bool(cover_path))
 
-    # === 阶段 5：滚动到底部 ===
+    # === Stage 5: Scroll to Bottom ===
     if not should_skip("scroll", resume_from, STEPS):
-        logger.info("📜 滚动页面到底部...")
+        logger.info("📜Scroll to the bottom...")
         try:
             target.scroll.to_bottom()
             time.sleep(1)
         except Exception as e:
-            logger.warning(f"⚠️ 滚动失败: {e}")
+            logger.warning(f"⚠️ Rolling failed: {e}")
         _handle_popups(page)
         dismiss_interfering_overlays(ctrl, work, baseline_tab_ids)
         log_step("scroll", "ok")
 
-    # === 阶段 5.5：设置平台选项 ===
+    # === Phase 5.5: Setting platform options ===
     if not should_skip("options", resume_from, STEPS):
         _handle_popups(page)
         dismiss_interfering_overlays(ctrl, work, baseline_tab_ids)
-        logger.info("⚙️ 正在设置上传选项...")
+        logger.info("⚙️ Setting upload options...")
         changed, recipe_diag = _set_tiktok_options(page, config)
         if changed:
-            logger.info(f"  📋 已设置: {', '.join(changed)}")
+            logger.info(f"  📋 Set: {', '.join(changed)}")
         else:
-            logger.info("  ℹ️ 所有选项保持默认值")
+            logger.info("  ℹ️ Keep all options at their default values")
 
         requested_schedule = config.get("schedule")
         schedule_set = any(c.startswith("schedule=") for c in changed)
         if requested_schedule and not schedule_set:
-            logger.error(f"  ❌ 定时发布设置失败（目标: {requested_schedule}），为防止视频被立即发布，已中止。")
+            logger.error(f"  ❌ The scheduled publishing setting failed (target: {requested_schedule}). To prevent the video from being published immediately, it has been aborted.")
             log_step("options", "fail", error="recipe_step_failed",
-                     detail=f"定时发布 {requested_schedule} 设置失败，中止发布以防立即公开")
+                     detail=f"Scheduled release {requested_schedule} failed to set, the release is suspended to prevent immediate disclosure.")
             schedule_diag = recipe_diag.get("schedule") or {}
             report_failure(page, run_id, platform, "options", "recipe_step_failed", safe_page_url(page),
-                           detail=f"定时发布 {requested_schedule} 设置失败",
+                           detail=f"Scheduled publishing {requested_schedule} setting failed",
                            recipe_key=schedule_diag.get("recipe_key", "schedule_recipe"),
                            failed_step=schedule_diag.get("failed_step", ""),
                            semantic_hint=schedule_diag.get("semantic_hint", ""),
@@ -738,12 +747,12 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
         requested_visibility = config.get("visibility", "everyone")
         visibility_set = any(c.startswith("visibility=") for c in changed)
         if requested_visibility != "everyone" and not visibility_set:
-            logger.error(f"  ❌ 可见性设置失败（目标: {requested_visibility}），为防止视频公开发布，已中止。")
+            logger.error(f"  ❌ Visibility setting failed (Target: {requested_visibility}), aborted to prevent video from being published publicly.")
             log_step("options", "fail", error="visibility_failed",
-                     detail=f"可见性 {requested_visibility} 设置失败，中止发布以防公开")
+                     detail=f"Visibility {requested_visibility} failed to set, publishing aborted to prevent disclosure")
             visibility_diag = recipe_diag.get("visibility") or {}
             report_failure(page, run_id, platform, "options", "visibility_failed", safe_page_url(page),
-                           detail=f"可见性 {requested_visibility} 设置失败",
+                           detail=f"Visibility {requested_visibility} setup failed",
                            recipe_key=visibility_diag.get("recipe_key", "visibility_recipe"),
                            failed_step=visibility_diag.get("failed_step", ""),
                            semantic_hint=visibility_diag.get("semantic_hint", ""),
@@ -753,11 +762,11 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
         log_step("options", "ok", changed=changed)
         time.sleep(0.5)
 
-    # === 阶段 6：等待版权检查完成 ===
+    # === Stage 6: Wait for copyright check to complete ===
     if not should_skip("copyright", resume_from, STEPS):
         _handle_popups(page)
-        logger.info("🔍 等待版权检查完成...")
-        required_checks = 1  # 默认只需 1 项通过，动态检测实际数量
+        logger.info("🔍 Waiting for the copyright check to complete...")
+        required_checks = 1  # By default, only 1 item is passed, and the actual quantity is dynamically detected
         time.sleep(1)
         toggle_on_sels = get_signal_list(platform, "copyright", "toggle_selector")
         toggle_off_sels = get_signal_list(platform, "copyright", "toggle_off_selector")
@@ -768,7 +777,7 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
                 enabled_count += len(toggles_on) if toggles_on else 0
             if enabled_count > 0:
                 required_checks = enabled_count
-                logger.info(f"   检测到 {required_checks} 个检查项已开启")
+                logger.info(f"   Detected {required_checks} checks turned on")
             else:
                 off_count = 0
                 for sel in toggle_off_sels:
@@ -776,11 +785,11 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
                     off_count += len(toggles_off) if toggles_off else 0
                 if off_count > 0:
                     required_checks = max(1, 2 - off_count)
-                    logger.info(f"   检测到 {off_count} 个检查项已关闭，需等待 {required_checks} 项通过")
+                    logger.info(f"   Detected that {off_count} check items have been closed, need to wait for {required_checks} items to pass")
                 else:
-                    logger.info(f"   未检测到开关状态，默认等待 {required_checks} 项通过")
+                    logger.info(f"   The switch status is not detected, and the default is to wait for the {required_checks} item to pass.")
         except Exception:
-            logger.info(f"   开关检测异常，默认等待 {required_checks} 项通过")
+            logger.info(f"   The switch detection is abnormal, and the default is to wait for the {required_checks} item to pass.")
 
         passed_sels = get_signal_list(platform, "copyright", "passed_signals")
         check_passed = False
@@ -790,20 +799,20 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
                 items = page.eles(sel, timeout=0.5)
                 total_passed += len(items) if items else 0
             if total_passed >= required_checks:
-                logger.info(f"   ✅ 版权检查全部通过 ({total_passed}/{required_checks} 项，耗时约 {i*2} 秒)")
+                logger.info(f"   ✅ All copyright checks passed ({total_passed}/{required_checks} items, which took about {i*2} seconds)")
                 check_passed = True
                 break
             if i % 5 == 4:
-                logger.info(f"   检查进行中... 已通过 {total_passed}/{required_checks} 项 ({i*2}秒)")
+                logger.info(f"   Inspection in progress... Passed {total_passed}/{required_checks} items ({i*2} seconds)")
             time.sleep(2)
 
         if not check_passed:
-            logger.warning("   ⚠️ 版权检查等待超时(30秒)，尝试继续发布...")
+            logger.warning("   ⚠️ Copyright check waiting timeout (30 seconds), try to continue publishing...")
         log_step("copyright", "ok" if check_passed else "fail",
                  error="" if check_passed else "timeout",
-                 detail="" if check_passed else "版权检查等待超时")
+                 detail="" if check_passed else "Copyright check wait timeout")
 
-    # === 阶段 6.5：发布前内容限制扫描 ===
+    # === Phase 6.5: Pre-Publish Content Restrictions Scan ===
     _has_content_warning = False
     _content_check_warnings = [
         'text:Content may be restricted',
@@ -815,70 +824,70 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
         if _cw_el and _cw_el.states.has_rect:
             _has_content_warning = True
             _cw_text = (_cw_el.text or "").strip()[:150]
-            logger.warning(f"  ⚠️ 发布前检测到内容限制警告: {_cw_text}")
-            logger.warning("  ⚠️ TikTok 提示该视频内容可能受限，可见度可能降低，但仍可发布")
+            logger.warning(f"  ⚠️ Content restriction warning detected before publishing: {_cw_text}")
+            logger.warning("  ⚠️TikTok prompts that the content of this video may be restricted and its visibility may be reduced, but it can still be posted")
             log_step("content_check", "ok", detail=f"content_warning: {_cw_text[:80]}")
             break
 
-    # === 阶段 7：点击发布 ===
+    # === Stage 7: Click Publish ===
     if no_publish:
-        logger.info("⏸️ --no-publish 模式：表单已填好，跳过发布步骤。请在浏览器中手动检查并发布。")
+        logger.info("⏸️ --no-publish mode: The form has been filled in, skip the publishing step. Please check and post manually in your browser.")
         log_step("complete", "ok", mode="no_publish")
         return True
 
     if not should_skip("publish", resume_from, STEPS):
         dismiss_interfering_overlays(ctrl, work, baseline_tab_ids)
 
-        # 发布前重新检查上传是否出错（视频处理可能异步失败）
+        # Recheck the upload for errors before publishing (video processing may fail asynchronously)
         has_error, error_desc = _check_upload_error(page)
         if has_error:
-            logger.warning(f"  ⚠️ 发布前检测到上传错误: {error_desc}，尝试点击 Retry...")
+            logger.warning(f"  ⚠️Upload error detected before publishing: {error_desc}, try clicking Retry...")
             retry_btn = page.ele('text:Retry', timeout=2) or page.ele('text:重试', timeout=1)
             if retry_btn:
                 try:
                     retry_btn.click()
-                    logger.info("  🔄 已点击 Retry，等待重新上传...")
+                    logger.info("  🔄 Clicked Retry, waiting for re-upload...")
                     time.sleep(3)
                     for _rw in range(60):
                         time.sleep(2)
                         still_error, _ = _check_upload_error(page)
                         if still_error:
                             if _rw % 10 == 9:
-                                logger.info(f"   重新上传中... ({_rw*2}秒)")
+                                logger.info(f"   Reuploading... ({_rw*2} seconds)")
                             continue
                         post_btn_check, _ = find_element(page, platform, "post_button", timeout=1)
                         if post_btn_check and post_btn_check.attr('aria-disabled') != 'true':
-                            logger.info(f"  ✅ 重新上传成功 (耗时约 {_rw*2} 秒)")
+                            logger.info(f"  ✅ Re-upload successful (took about {_rw*2} seconds)")
                             break
                     else:
-                        logger.error("  ❌ 重新上传超时(120秒)，中止发布。")
-                        log_step("publish", "fail", error="file_rejected", detail=f"重试后仍失败: {error_desc}")
+                        logger.error("  ❌ The re-upload times out (120 seconds) and publication is aborted.")
+                        log_step("publish", "fail", error="file_rejected", detail=f"Failed after retrying: {error_desc}")
                         report_failure(page, run_id, platform, "publish", "file_rejected", safe_page_url(page), detail=error_desc)
                         return False
                 except Exception as e:
-                    logger.error(f"  ❌ 点击 Retry 失败: {e}")
+                    logger.error(f"  ❌ Click Retry failed: {e}")
                     log_step("publish", "fail", error="file_rejected", detail=error_desc)
                     report_failure(page, run_id, platform, "publish", "file_rejected", safe_page_url(page), detail=error_desc)
                     return False
             else:
-                logger.error(f"  ❌ 上传错误且无 Retry 按钮: {error_desc}")
+                logger.error(f"  ❌ Upload error and no Retry button: {error_desc}")
                 log_step("publish", "fail", error="file_rejected", detail=error_desc)
                 report_failure(page, run_id, platform, "publish", "file_rejected", safe_page_url(page), detail=error_desc)
                 return False
 
-        logger.info("🚀 正在查找【发布】按钮...")
+        logger.info("🚀 Looking for the [Publish] button...")
         post_btn, _ = find_element(page, platform, "post_button", timeout=10)
 
         if not post_btn:
-            logger.warning("⚠️ 未找到发布按钮，请手动检查浏览器。")
-            log_step("publish", "fail", error="selector_not_found", detail="post_button 未找到")
+            logger.warning("⚠️ Publish button not found, please check your browser manually.")
+            log_step("publish", "fail", error="selector_not_found", detail="post_button not found")
             report_failure(page, run_id, platform, "publish", "selector_not_found", safe_page_url(page),
                            selectors_tried="post_button")
             return False
 
         for i in range(15):
             if post_btn.attr('aria-disabled') == 'true' or post_btn.attr('data-disabled') == 'true':
-                logger.info(f"   按钮未就绪，等待... ({i+1}/15)")
+                logger.info(f"   Button not ready, waiting... ({i+1}/15)")
                 time.sleep(2)
             else:
                 break
@@ -886,16 +895,16 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
         if post_btn.attr('aria-disabled') == 'true' or post_btn.attr('data-disabled') == 'true':
             has_error_final, error_desc_final = _check_upload_error(page)
             if has_error_final:
-                logger.error(f"❌ 发布按钮持续禁用，检测到错误: {error_desc_final}")
+                logger.error(f"❌ Publish button remains disabled, error detected: {error_desc_final}")
                 log_step("publish", "fail", error="file_rejected", detail=error_desc_final)
                 report_failure(page, run_id, platform, "publish", "file_rejected", safe_page_url(page), detail=error_desc_final)
                 return False
-            logger.warning("⚠️ 发布按钮仍为禁用状态(30秒)，强制尝试点击...")
+            logger.warning("⚠️ Publish button remains disabled (30 seconds), force try to click...")
 
-        # region agent log — TL1: publish click 之前 (T-A: 强制点击是否合法)
+        # region agent log — TL1: Before publish click (T-A: Is the forced click legal?)
         _dbg_log_tk(
             "tiktok.py:publish:before_click",
-            "publish click 之前页面状态（post 按钮 disabled / 顶层 modal）",
+            "publish click page state before (post button disabled / top-level modal)",
             {"run_id": run_id, **_dbg_tk_probe(page)},
             "T-A+T-B",
         )
@@ -903,39 +912,39 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
 
         try:
             post_btn.click()
-            logger.info("✅ 已点击发布按钮")
-            # 立即开始监听「Continue to post?」审核弹窗（与点击紧贴，不能中间插 sleep）
-            # 弹窗通常在点击后 0-3 秒内出现，错过窗口期就会被后续流程当成"已发布"误判
+            logger.info("✅ Publish button clicked")
+            # Immediately start monitoring the "Continue to post?" audit pop-up window (close to the click, no sleep in the middle)
+            # The pop-up window usually appears within 0-3 seconds after clicking. If the window period is missed, it will be misjudged as "published" by subsequent processes.
             ctp_handled = _handle_continue_to_post_dialog(page)
         except Exception as e:
-            logger.warning(f"⚠️ 点击发布按钮失败: {e}")
+            logger.warning(f"⚠️ Failed to click publish button: {e}")
             log_step("publish", "fail", error="unknown", detail=str(e)[:200])
             report_failure(page, run_id, platform, "publish", "unknown", safe_page_url(page), detail=str(e)[:200])
             return False
         log_step("publish", "ok")
         if ctp_handled:
-            logger.info("  ℹ️ Continue-to-post 弹窗已处理，等待平台跳转/发布完成")
+            logger.info("  ℹ️ Continue-to-post pop-up window has been processed, waiting for platform jump/release to complete")
 
-    # === 阶段 8：处理可能的二次确认弹窗 ===
+    # === Phase 8: Handling possible secondary confirmation pop-ups ===
     from social_uploader.tools.post_publish import handle_post_publish_popups, wait_for_publish_confirmation
     from social_uploader.tools.retry_engine import retry_step, StepResult
 
     popup_result = handle_post_publish_popups(page, platform, content_warning=_has_content_warning)
     if popup_result.get("action") == "abort":
-        logger.error(f"❌ 发布被阻止: {popup_result.get('description', '')}")
+        logger.error(f"❌ Posting blocked: {popup_result.get('description', '')}")
         log_step("publish_confirm", "fail", error="platform_unavailable",
                  detail=popup_result.get("description", "")[:200])
         report_failure(page, run_id, platform, "publish_confirm", "platform_unavailable",
                        page.url, detail=popup_result.get("description", "")[:200])
         return False
 
-    # === 阶段 9：等待发布成功确认（带智能重试） ===
+    # === Phase 9: Waiting for confirmation of successful release (with smart retries) ===
     if not should_skip("confirm", resume_from, STEPS):
 
         def _idempotent_check():
-            """幂等检查：视频是否已经在作品列表中。
-            仅 URL 不足以判定成功（可能是脚本自己导航过去的），
-            必须同时检测到 success_signals 或视频标题。
+            """Idempotent check: whether the video is already in the works list.
+            The URL alone is not enough to determine success (the script may have navigated there on its own),
+            Must also detect success_signals or video title.
             """
             try:
                 cur = page.url.lower()
@@ -965,15 +974,15 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
                 try:
                     cur = page.url.lower()
                 except Exception:
-                    logger.warning("  ⚠️ 页面连接断开，无法确认发布状态，请手动检查")
+                    logger.warning("  ⚠️ The page connection is disconnected and the publishing status cannot be confirmed. Please check manually.")
                     return StepResult(False, error="page_disconnected_unverified")
 
                 if "upload" in cur:
-                    logger.info("  页面仍在上传页，主动检查内容管理页...")
+                    logger.info("  The page is still uploading, proactively check the content management page...")
                     page.get("https://www.tiktok.com/tiktokstudio/content")
                     page.wait.doc_loaded(timeout=10)
                     time.sleep(2)
-                    # region agent log — TL3: 跳到内容页后探针 (T-C, T-D, T-E)
+                    # region agent log — TL3: probe after jumping to content page (T-C, T-D, T-E)
                     _dbg_log_tk(
                         "tiktok.py:confirm:on_content_page",
                         "跳转到 tiktokstudio/content 后页面状态（视频卡片 / success_signals）",
@@ -983,19 +992,22 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
                     # endregion
                     matched, sel = check_signals(page, platform, "confirm", "success_signals", timeout=1)
                     if matched:
-                        logger.info(f"  ✅ 内容页检测到成功信号: {sel}")
+                        logger.info(f"  ✅ Content page detected success signal: {sel}")
                         return StepResult(True, value=f"manual_nav_signal: {sel}")
                     if title:
                         short_title = title[:20]
                         title_el = page.ele(f'text:{short_title}', timeout=3)
                         if title_el:
-                            logger.info(f"  ✅ 内容页找到视频标题「{short_title}」，视为发布成功")
+                            logger.info(
+                                f'  ✅ Found the video title "{short_title}" on the content page; '
+                                "treating the upload as successfully published"
+                            )
                             return StepResult(True, value="manual_nav_title_verified")
-                    logger.warning("  ⚠️ 内容页未找到发布成功证据，判定为失败")
-                    # region agent log — TL4: 判定失败前最终探针 (T-C, T-D)
+                    logger.warning("  ⚠️ No evidence of successful publishing was found on the content page and it was judged as a failure.")
+                    # region agent log — TL4: Final probe before failure (T-C, T-D)
                     _dbg_log_tk(
                         "tiktok.py:confirm:before_fail",
-                        "内容页未找到证据，判定失败前最终页面状态",
+                        "No evidence found on the content page, final page status before failure",
                         {"run_id": run_id, **_dbg_tk_probe(page)},
                         "T-C+T-D",
                     )
@@ -1010,7 +1022,7 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
             except Exception as e:
                 err_name = type(e).__name__
                 if "Disconnected" in err_name or "disconnected" in str(e).lower():
-                    logger.warning("  ⚠️ 页面连接断开，无法确认发布状态，请手动检查")
+                    logger.warning("  ⚠️ The page connection is disconnected and the publishing status cannot be confirmed. Please check manually.")
                     return StepResult(False, error="page_disconnected_unverified")
                 raise
 
@@ -1024,13 +1036,13 @@ def _do_upload_tiktok(work, ctrl, baseline_tab_ids, video_path, title, descripti
 
         if confirm_result.success:
             reason = confirm_result.value or "retry_success"
-            logger.info(f"🎉 TikTok 上传流程结束。({reason})")
+            logger.info(f"🎉 The TikTok upload process is over. ({reason})")
             log_step("confirm", "ok", detail=str(reason)[:200])
             return True
         else:
             reason = confirm_result.error or "unknown"
-            logger.warning(f"  ⚠️ 发布确认失败: {reason}")
-            logger.info("❌ TikTok 上传流程结束（未确认成功）。")
+            logger.warning(f"  ⚠️ Release confirmation failed: {reason}")
+            logger.info("❌ The TikTok upload process ends (success is not confirmed).")
             log_step("confirm", "fail", error="state_mismatch", detail=str(reason)[:200])
             try:
                 current_url = page.url

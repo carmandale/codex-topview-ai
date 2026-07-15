@@ -1,16 +1,16 @@
-"""配方执行器 — 读取 JSON recipe，按步骤执行浏览器交互。
+"""Recipe Executor — Reads a JSON recipe and performs browser interaction step by step.
 
-三层逐级兜底：
-  Tier 1: 用配方中的 selector 直接执行
-  Tier 2: selector 失败时调用 dom_heuristic 启发式查找，成功后自动写回配方
-  Tier 3: 全部失败时输出增强 DIAG，交给 Agent（OpenClaw）介入
+Three layers of step-by-step coverage:
+  Tier 1: Execute directly using the selector in the recipe
+  Tier 2: When the selector fails, the dom_heuristic heuristic search is called, and the recipe is automatically written back after success.
+  Tier 3: When all fails, enhanced DIAG is output and handed over to Agent (OpenClaw) to intervene.
 
-支持的 action 类型：
-  click         — 点击元素（CSS 选择器 / JS querySelector）
-  set_value     — 用 nativeSet 设置 input 值
-  click_and_set — 先点击再设值（针对自定义下拉/日历）
-  pick_option   — 在选项列表中按文本选择
-  wait          — 等待元素出现
+Supported action types:
+  click — Click on an element (CSS selector / JS querySelector)
+  set_value — Set input value using nativeSet
+  click_and_set — click first then set value (for custom dropdown/calendar)
+  pick_option — Select by text in a list of options
+  wait — wait for an element to appear
 """
 
 import json
@@ -40,7 +40,7 @@ def _load_patterns():
     try:
         return json.loads(_PATTERNS_PATH.read_text(encoding="utf-8"))
     except Exception as e:
-        logger.warning(f"state_patterns.json 读取失败: {e}")
+        logger.warning(f"Failed to read state_patterns.json: {e}")
         return {}
 
 
@@ -51,21 +51,21 @@ def _save_patterns(data):
             encoding="utf-8",
         )
     except Exception as e:
-        logger.warning(f"state_patterns.json 写入失败: {e}")
+        logger.warning(f"Failed to write state_patterns.json: {e}")
 
 
 def load_recipe(platform, recipe_key):
-    """从 state_patterns.json 加载指定配方。"""
+    """Loads the specified recipe from state_patterns.json."""
     data = _load_patterns()
     recipe = data.get(platform, {}).get(recipe_key)
     if not recipe:
-        logger.warning(f"配方 {platform}.{recipe_key} 不存在")
+        logger.warning(f"Recipe {platform}.{recipe_key} does not exist")
         return None
     return recipe
 
 
 def _resolve_variables(text, variables):
-    """将模板变量 ${key} 替换为实际值。"""
+    """Replace the template variable ${key} with the actual value."""
     if not isinstance(text, str):
         return text
     for k, v in variables.items():
@@ -74,7 +74,7 @@ def _resolve_variables(text, variables):
 
 
 def _resolve_step(step, variables):
-    """对 step 中的所有字符串字段做变量替换（深拷贝）。"""
+    """Perform variable substitution (deep copy) on all string fields in step."""
     resolved = {}
     for k, v in step.items():
         if isinstance(v, str):
@@ -99,7 +99,7 @@ def _resolve_step(step, variables):
 
 
 def _get_selectors(step):
-    """从 step 的 target 中提取选择器列表（primary + fallbacks）。"""
+    """Extract the list of selectors (primary + fallbacks) from the step's target."""
     target = step.get("target", {})
     if isinstance(target, str):
         return [target]
@@ -113,7 +113,7 @@ def _get_selectors(step):
 
 
 def _text_matches_verify(el, verify_list):
-    """检查元素文本是否包含 verify_text 列表中的任一值。"""
+    """Checks whether the element text contains any of the values ​​in the verify_text list."""
     try:
         el_text = (el.text or "").strip()
     except Exception:
@@ -125,13 +125,13 @@ def _text_matches_verify(el, verify_list):
 
 
 def _exec_click(page, step):
-    """执行 click 动作。
+    """Perform click action.
 
-    使用 DrissionPage 原生 ele().click() 以确保触发 React 合成事件。
-    纯 JS el.click() 无法触发 React 事件系统绑定的 onClick 回调。
+    Use DrissionPage native ele().click() to ensure React synthetic events are fired.
+    Pure JS el.click() cannot trigger the onClick callback bound to the React event system.
 
-    可选 verify_text：点击前验证元素文本是否包含预期值，防止 CSS 选择器
-    命中错误元素导致的假成功。不匹配时跳过该选择器继续尝试下一个。
+    Optional verify_text: Verify that the element text contains the expected value before clicking, preventing CSS selectors
+    False success caused by hitting the wrong element. If there is no match, skip this selector and continue trying the next one.
     """
     selectors = _get_selectors(step)
     fallback_texts = step.get("fallback", {}).get("text_match", []) if isinstance(step.get("fallback"), dict) else []
@@ -142,7 +142,7 @@ def _exec_click(page, step):
             el = page.ele(f'css:{sel}', timeout=2)
             if el:
                 if verify_text and not _text_matches_verify(el, verify_text):
-                    logger.debug(f"    verify_text 不匹配, 跳过 {sel}")
+                    logger.debug(f"    verify_text does not match, skip {sel}")
                     continue
                 el.click()
                 return "ok", sel
@@ -163,10 +163,10 @@ def _exec_click(page, step):
 
 
 def _exec_set_value(page, step):
-    """执行 set_value 动作（通过 CDP Input 层设置值，所有事件 isTrusted=true）。
+    """Execute set_value action (set value via CDP Input layer, all events isTrusted=true).
 
-    支持 Shadow DOM 穿透：先用标准 querySelectorAll，失败后递归搜索 Shadow DOM。
-    流程：JS 定位元素 → CDP 点击聚焦 → CDP 全选 → CDP 输入新值 → CDP Tab 触发 change。
+    Support Shadow DOM penetration: first use standard querySelectorAll, and then recursively search Shadow DOM after failure.
+    Process: JS locate element → CDP click to focus → CDP select all → CDP enter new value → CDP Tab triggers change.
     """
     selectors = _get_selectors(step)
     value = step.get("value", "")
@@ -255,14 +255,15 @@ def _exec_set_value(page, step):
 
 
 def _exec_pick_option(page, step):
-    """执行 pick_option 动作（在选项列表中选择）。
+    """Execute the pick_option action (select in a list of options).
 
-    match_text 支持 ``|`` 分隔的多候选文本，例如 ``"Only me|仅自己|Only Me"``，
-    JS 侧会依次匹配，命中任一即点击。
+    ``match_text`` supports multiple candidate labels separated by ``|``, for example
+    ``"Only me|仅自己|Only Me"``. The localized label is retained for Chinese platform UIs.
+    The JS side will match in sequence, and click if you hit any one.
 
-    会自动跳过不可见 / disabled / 跨月补位等不可点击的候选项，避免日历类
-    控件因为 DOM 中存在前后月份的同名"日"被错误点击（例如 4 月日历首行的
-    3 月 30 号）。可通过 step 配置 ``exclude_classes`` 增加自定义过滤类名。
+    Will automatically skip invisible/disabled/cross-month filling and other non-clickable candidates to avoid calendar type
+    The control was clicked incorrectly because there are "days" with the same name in the previous and following months in the DOM (for example, the first row of the April calendar
+    March 30). You can add a custom filtering class name through step configuration ``exclude_classes``.
     """
     container = step.get("container", "")
     item_selector = step.get("item_selector", "")
@@ -334,7 +335,7 @@ def _exec_pick_option(page, step):
 
 
 def _exec_wait(page, step):
-    """执行 wait 动作（等待元素出现）。"""
+    """Execute the wait action (wait for the element to appear)."""
     selectors = _get_selectors(step)
     max_wait = step.get("max_wait_ms", 5000)
     interval = 500
@@ -363,22 +364,22 @@ _ACTION_MAP = {
 
 
 def _try_discover(page, step, action):
-    """Tier 2a（启发式） → Tier 2b（AgentQL AI）逐级发现替代选择器。"""
+    """Tier 2a (Heuristic) → Tier 2b (AgentQL AI) Discover alternative selectors step by step."""
     hint = step.get("semantic_hint", "")
     context = step.get("context_selector")
 
-    # Tier 2a: dom_heuristic 启发式（本地、免费、快速）
+    # Tier 2a: dom_heuristic heuristic (native, free, fast)
     if action in ("click", "wait"):
         fallback_texts = step.get("fallback", {}).get("text_match", []) if isinstance(step.get("fallback"), dict) else []
         sel, el_info = discover_for_click(page, hint, fallback_texts, context)
         if sel:
-            logger.info(f"    🔍 Tier 2a 发现: {sel}")
+            logger.info(f"    🔍 Tier 2a Found: {sel}")
             return sel
     elif action == "set_value":
         val_pat = step.get("target", {}).get("value_pattern", "")
         sel, el_info = discover_for_value(page, val_pat, hint, context)
         if sel:
-            logger.info(f"    🔍 Tier 2a 发现: {sel}")
+            logger.info(f"    🔍 Tier 2a Found: {sel}")
             return sel
     elif action == "pick_option":
         match_text = step.get("match_text", "")
@@ -386,16 +387,16 @@ def _try_discover(page, step, action):
         for text in texts:
             sel, el_info = discover_for_click(page, f"{hint} {text}", [text], context)
             if sel:
-                logger.info(f"    🔍 Tier 2a 发现: {sel}")
+                logger.info(f"    🔍 Tier 2a Found: {sel}")
                 return sel
 
-    # Tier 2b: AgentQL AI（云端、10s 延迟、需 API Key）
+    # Tier 2b: AgentQL AI (cloud, 10s delay, API Key required)
     if hint:
         try:
             from social_uploader.tools.agentql_client import discover_with_ai
             sel = discover_with_ai(page, hint, action, context)
             if sel:
-                logger.info(f"    🧠 Tier 2b AgentQL 发现: {sel}")
+                logger.info(f"    🧠 Tier 2b AgentQL found: {sel}")
                 return sel
         except ImportError:
             pass
@@ -404,7 +405,7 @@ def _try_discover(page, step, action):
 
 
 def _update_recipe_step(platform, recipe_key, step_id, new_selector):
-    """将 Tier 2 发现的新选择器写回 recipe（旧选择器降为 fallback）。"""
+    """Write the new selector discovered by Tier 2 back to the recipe (the old selector falls back)."""
     data = _load_patterns()
     recipe = data.get(platform, {}).get(recipe_key)
     if not recipe:
@@ -436,28 +437,28 @@ def _update_recipe_step(platform, recipe_key, step_id, new_selector):
     from social_uploader.tools.pattern_checker import reload_patterns
     reload_patterns()
 
-    logger.info(f"  📝 配方已更新: {platform}.{recipe_key}.{step_id} → {new_selector} (v{recipe['version']})")
+    logger.info(f"  📝 Recipe updated: {platform}.{recipe_key}.{step_id} → {new_selector} (v{recipe['version']})")
 
 
 def _emit_failure_candidates(page, step, hint, action, context_selector=None, top_n=3):
-    """Tier 1+2 都失败时，扫描 DOM 输出 top_n 候选元素到 stderr，便于事后诊断。
+    """When Tier 1+2 fails, scan the DOM and output the top_n candidate elements to stderr to facilitate subsequent diagnosis.
 
-    输出格式（一行 JSON）：
+    Output format (one line of JSON):
       {"step":"recipe_candidates","step_id":...,"hint":...,"candidates":[...]}
-    候选按 hint 关键词命中数排序。空 hint 时降级为输出当前 DOM 中前 top_n 个可见交互元素。
+    Candidates are sorted by the number of hint keyword hits. When the hint is empty, it is reduced to outputting the first top_n visible interactive elements in the current DOM.
     """
     try:
         elements = _scan_dom(page, context_selector)
     except Exception as e:
         elements = []
-        logger.debug(f"扫描 DOM 失败: {e}")
+        logger.debug(f"Scan DOM failed: {e}")
 
     if not elements:
         return
 
     keywords = [w.lower() for w in re.findall(r"[\w\u4e00-\u9fff]+", hint or "") if len(w) >= 2]
     if not keywords:
-        return  # 没有 hint 关键词时不做无意义的输出
+        return  # No meaningless output without hint keyword
 
     def _score(el):
         searchable = " ".join([
@@ -499,20 +500,20 @@ def _emit_failure_candidates(page, step, hint, action, context_selector=None, to
 
 
 def run_recipe(page, platform, recipe_key, variables):
-    """执行交互配方，返回 (success: bool, failed_step_id: str|None, hint: str)。
+    """Execute the interactive recipe and return (success: bool, failed_step_id: str|None, hint: str).
 
-    每一步先尝试 Tier 1（配方选择器），失败则 Tier 2（启发式发现），
-    Tier 2 成功后自动写回配方，下次直接走 Tier 1。
+    Each step tries Tier 1 (recipe selector) first, and if it fails, Tier 2 (heuristic discovery),
+    After success in Tier 2, the recipe will be written back automatically, and you will go directly to Tier 1 next time.
     """
     recipe = load_recipe(platform, recipe_key)
     if not recipe:
-        return False, None, f"配方 {platform}.{recipe_key} 不存在"
+        return False, None, f"Recipe {platform}.{recipe_key} does not exist"
 
     steps = recipe.get("steps", [])
     if not steps:
-        return False, None, "配方步骤为空"
+        return False, None, "Recipe step is empty"
 
-    logger.info(f"  📋 执行配方: {platform}.{recipe_key} (v{recipe.get('version', 1)}, {len(steps)} 步)")
+    logger.info(f"  📋 Execute recipe: {platform}.{recipe_key} (v{recipe.get('version', 1)}, {len(steps)} steps)")
 
     for step in steps:
         step_id = step.get("id", "unknown")
@@ -522,10 +523,10 @@ def run_recipe(page, platform, recipe_key, variables):
 
         executor = _ACTION_MAP.get(action)
         if not executor:
-            logger.warning(f"  ⚠️ [{step_id}] 未知 action: {action}")
-            return False, step_id, f"未知 action 类型: {action}"
+            logger.warning(f"  ⚠️ [{step_id}] Unknown action: {action}")
+            return False, step_id, f"Unknown action type: {action}"
 
-        # Tier 1: 按配方执行
+        # Tier 1: Executed according to recipe
         retry_count = resolved.get("retry", 1)
         wait_before = resolved.get("wait_before_ms", 0)
         if wait_before:
@@ -541,16 +542,16 @@ def run_recipe(page, platform, recipe_key, variables):
 
         if result and (result.startswith("ok") or result == "set_but_unverified"):
             if result == "set_but_unverified":
-                logger.info(f"  ⚠️ [{step_id}] {action} 值已写入但未通过验证，视为成功继续")
+                logger.info(f"  ⚠️ [{step_id}] The {action} value has been written but failed to pass verification. It is considered to continue successfully.")
             else:
-                logger.info(f"  ✅ [{step_id}] {action} 成功")
+                logger.info(f"  ✅ [{step_id}] {action} successful")
             wait_after = resolved.get("wait_after_ms", 0)
             if wait_after:
                 time.sleep(wait_after / 1000)
             continue
 
-        # Tier 2: 启发式发现
-        logger.info(f"  ⚠️ [{step_id}] Tier 1 失败 ({result})，尝试 Tier 2 发现...")
+        # Tier 2: Heuristic Discovery
+        logger.info(f"  ⚠️ [{step_id}] Tier 1 failed ({result}), tried Tier 2 and found...")
         discovered = _try_discover(page, resolved, action)
 
         if discovered:
@@ -563,32 +564,32 @@ def run_recipe(page, platform, recipe_key, variables):
 
             result2, _ = executor(page, tier2_step)
             if result2 and result2.startswith("ok"):
-                logger.info(f"  ✅ [{step_id}] Tier 2 成功，自动更新配方")
+                logger.info(f"  ✅ [{step_id}] Tier 2 successful, automatically update the recipe")
                 _update_recipe_step(platform, recipe_key, step_id, discovered)
                 wait_after = resolved.get("wait_after_ms", 0)
                 if wait_after:
                     time.sleep(wait_after / 1000)
                 continue
 
-        # Tier 1+2 都失败
+        # Tier 1+2 all failed
         if resolved.get("optional"):
-            logger.info(f"  ⏭️ [{step_id}] 可选步骤失败，跳过继续")
+            logger.info(f"  ⏭️ [{step_id}] Optional step failed, skip to continue")
             continue
-        logger.error(f"  ❌ [{step_id}] Tier 1+2 失败: {result}")
+        logger.error(f"  ❌ [{step_id}] Tier 1+2 failed: {result}")
         _emit_failure_candidates(
             page, resolved, hint, action,
             context_selector=resolved.get("context_selector"),
         )
-        return False, step_id, hint or f"{action} 操作失败"
+        return False, step_id, hint or f"{action} Operation failed"
 
     return True, None, ""
 
 
 def show_recipe(platform, recipe_key):
-    """以可读格式输出配方内容。"""
+    """Outputs the recipe contents in a readable format."""
     recipe = load_recipe(platform, recipe_key)
     if not recipe:
-        return f"配方 {platform}.{recipe_key} 不存在"
+        return f"Recipe {platform}.{recipe_key} does not exist"
 
     lines = [
         f"RECIPE: {platform}.{recipe_key}",
@@ -616,11 +617,11 @@ def show_recipe(platform, recipe_key):
 
 
 def fix_recipe_step(platform, recipe_key, step_id, new_selector):
-    """CLI 命令接口：手动更新配方中某一步的选择器。"""
+    """CLI command interface: manually update the selector of a step in the recipe."""
     data = _load_patterns()
     recipe = data.get(platform, {}).get(recipe_key)
     if not recipe:
-        return False, f"配方 {platform}.{recipe_key} 不存在"
+        return False, f"Recipe {platform}.{recipe_key} does not exist"
 
     found = False
     for step in recipe.get("steps", []):
@@ -642,8 +643,8 @@ def fix_recipe_step(platform, recipe_key, step_id, new_selector):
 
     if not found:
         available = [s.get("id") for s in recipe.get("steps", [])]
-        return False, f"步骤 {step_id} 不存在（可用: {', '.join(available)}）"
+        return False, f"Step {step_id} does not exist (available: {', '.join(available)})"
 
     recipe["version"] = recipe.get("version", 0) + 1
     _save_patterns(data)
-    return True, f"OK: {platform}.{recipe_key}.{step_id} selector 已更新为 \"{new_selector}\" (v{recipe['version']})"
+    return True, f"OK: {platform}.{recipe_key}.{step_id} selector has been updated to \"{new_selector}\" (v{recipe['version']})"

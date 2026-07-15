@@ -3,7 +3,7 @@
 Fetch Bilibili video metadata + description via public API.
 
 Usage:
-    python3 fetch_bilibili_video.py <BV号>
+    python3 fetch_bilibili_video.py <BV number>
     python3 fetch_bilibili_video.py BV1GW9KBzEGA
 
 Output: JSON with author, title, desc, date, views, likes.
@@ -34,7 +34,7 @@ def fetch_video(bvid):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: fetch_bilibili_video.py <BV号>")
+        print("Usage: fetch_bilibili_video.py <BV number>")
         sys.exit(1)
     result = fetch_video(sys.argv[1])
     if result:

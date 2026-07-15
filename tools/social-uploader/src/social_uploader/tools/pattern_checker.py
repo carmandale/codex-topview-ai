@@ -1,7 +1,7 @@
-"""状态模式检测 — 从 state_patterns.json 读取信号列表，统一检测页面状态。
+"""State pattern detection - read the signal list from state_patterns.json and uniformly detect the page status.
 
-将原本硬编码在各上传脚本中的文本/选择器检测逻辑抽取到配置文件，
-使 auto-repair 系统可通过 fix-pattern 命令热修复这些文案变化。
+Extract the text/selector detection logic originally hard-coded in each upload script into the configuration file.
+Enable the auto-repair system to hot-fix these copywriting changes through the fix-pattern command.
 """
 
 import json
@@ -16,7 +16,7 @@ _cache = {}
 
 
 def _load_all():
-    """读取 state_patterns.json 全量内容，带文件级缓存。"""
+    """Read the full content of state_patterns.json with file-level caching."""
     if _cache:
         return _cache
     try:
@@ -24,34 +24,34 @@ def _load_all():
         _cache.update(data)
         return _cache
     except Exception as e:
-        logger.warning(f"state_patterns.json 读取失败: {e}")
+        logger.warning(f"Failed to read state_patterns.json: {e}")
         return {}
 
 
 def reload_patterns():
-    """清除缓存，强制下次读取时重新加载文件。"""
+    """Clear the cache to force the file to be reloaded the next time it is read."""
     _cache.clear()
 
 
 def get_patterns(platform, step):
-    """读取指定平台/步骤的所有模式配置。"""
+    """Read all mode configurations for the specified platform/step."""
     data = _load_all()
     return data.get(platform, {}).get(step, {})
 
 
 def get_signal_list(platform, step, signal_type):
-    """读取指定平台/步骤/信号类型的选择器列表。"""
+    """Read the selector list for the specified platform/step/signal type."""
     patterns = get_patterns(platform, step)
     return patterns.get(signal_type, [])
 
 
 def check_signals(page, platform, step, signal_type, timeout=0.3):
-    """从 state_patterns.json 读取信号列表，逐个检测页面元素。
+    """Read the signal list from state_patterns.json and detect page elements one by one.
 
-    返回 (matched: bool, matched_selector: str | None)。
-    信号列表中的每一项可以是：
-      - 字符串选择器（如 "text:Post"）
-      - 带描述的字典（如 {"selector": "text:foo", "desc": "bar"}）
+    Return (matched: bool, matched_selector: str | None).
+    Each item in the signal list can be:
+      - String selector (such as "text:Post")
+      - Dictionary with description (e.g. {"selector": "text:foo", "desc": "bar"})
     """
     signals = get_signal_list(platform, step, signal_type)
     for sig in signals:
@@ -66,9 +66,9 @@ def check_signals(page, platform, step, signal_type, timeout=0.3):
 
 
 def check_error_signals(page, platform, step, signal_type="error_signals", timeout=0.3):
-    """专门检测错误信号，返回 (has_error: bool, error_desc: str)。
+    """Specifically detects error signals and returns (has_error: bool, error_desc: str).
 
-    error_signals 列表中的每一项是 {"selector": "...", "desc": "..."}。
+    Each item in the error_signals list is {"selector": "...", "desc": "..."}.
     """
     signals = get_signal_list(platform, step, signal_type)
     for sig in signals:
@@ -216,10 +216,10 @@ _SWEEP_MODALS_JS = """
 
 
 def sweep_modals(page, max_rounds=3):
-    """JS 通用弹窗扫描器：检测并关闭页面上所有可见的 dialog/modal/overlay。
+    """JS universal pop-up scanner: detect and close all visible dialogs/modal/overlays on the page.
 
-    不依赖配置文件，通过 DOM 结构自动识别弹窗并尝试关闭。
-    返回关闭的弹窗总数。
+    Does not rely on configuration files, automatically identifies pop-up windows through the DOM structure and attempts to close them.
+    Returns the total number of closed pop-ups.
     """
     from social_uploader.tools.js_runner import run_iife
     total_dismissed = 0
@@ -229,7 +229,7 @@ def sweep_modals(page, max_rounds=3):
             count = int(closed) if closed else 0
             if count > 0:
                 total_dismissed += count
-                logger.info(f"  🧹 弹窗扫描器关闭了 {count} 个弹窗")
+                logger.info(f"  🧹 Pop-up scanner closed {count} pop-ups")
                 time.sleep(0.3)
             else:
                 break
@@ -239,10 +239,10 @@ def sweep_modals(page, max_rounds=3):
 
 
 def dismiss_popups(page, platform, max_rounds=3):
-    """全面弹窗清理：先用 JS 扫描器处理通用弹窗，再用配置选择器在 dialog 内兜底。
+    """Comprehensive pop-up window cleaning: first use the JS scanner to process general pop-up windows, and then use the configuration selector to clean up the dialog.
 
-    配置选择器仅在 role="dialog" / role="alertdialog" 元素内搜索，
-    避免在全页面匹配到主内容区同名文本导致误触跳转。
+    Configure the selector to search only within role="dialog" / role="alertdialog" elements,
+    Avoid accidental jumps caused by matching text with the same name in the main content area on the entire page.
     """
     sweep_modals(page, max_rounds=max_rounds)
 
@@ -261,8 +261,8 @@ def dismiss_popups(page, platform, max_rounds=3):
                 dlg_text = ""
             if (
                 "continue to post" in dlg_text
-                or "继续发布" in dlg_text
-                or "检查尚未完成" in dlg_text
+                or "continue publishing" in dlg_text
+                or "Check not yet completed" in dlg_text
             ):
                 continue
             for selector in selectors:
@@ -271,7 +271,7 @@ def dismiss_popups(page, platform, max_rounds=3):
                         try:
                             if btn.states.has_rect:
                                 btn.click()
-                                logger.info(f"  ✅ 关闭弹窗 ({selector})")
+                                logger.info(f"  ✅Close pop-up window ({selector})")
                                 time.sleep(0.2)
                                 found_any = True
                         except Exception:
@@ -283,7 +283,7 @@ def dismiss_popups(page, platform, max_rounds=3):
 
 
 def dismiss_error_popup(page, platform, step, signal_type="error_dismiss", timeout=0.3):
-    """关闭上传错误弹窗（如 TikTok 的"无法处理"弹窗后的关闭/替换按钮）。"""
+    """Close the upload error pop-up window (such as the close/replace button after TikTok's "unable to process" pop-up window)."""
     selectors = get_signal_list(platform, step, signal_type)
     for selector in selectors:
         try:
@@ -297,17 +297,17 @@ def dismiss_error_popup(page, platform, step, signal_type="error_dismiss", timeo
 
 
 def add_pattern(platform, step, signal_type, value):
-    """安全地将新信号插入 state_patterns.json 对应位置的列表开头。
+    """Safely insert the new signal at the beginning of the list in state_patterns.json at the corresponding position.
 
-    返回 (success: bool, message: str)。
+    Return (success: bool, message: str).
     """
     try:
         data = json.loads(_PATTERNS_PATH.read_text(encoding="utf-8"))
     except Exception as e:
-        return False, f"读取 state_patterns.json 失败: {e}"
+        return False, f"Failed to read state_patterns.json: {e}"
 
     if platform not in data:
-        return False, f"平台 \"{platform}\" 不存在于 state_patterns.json（可用: {', '.join(data.keys())}）"
+        return False, f"Platform \"{platform}\" does not exist in state_patterns.json (available: {', '.join(data.keys())})"
 
     if step not in data[platform]:
         data[platform][step] = {}
@@ -325,7 +325,7 @@ def add_pattern(platform, step, signal_type, value):
             existing_selectors.append(item)
 
     if value in existing_selectors:
-        return True, f"信号已存在于 {platform}.{step}.{signal_type}，无需重复添加"
+        return True, f"The signal already exists in {platform}.{step}.{signal_type}, no need to add it again"
 
     current_list.insert(0, value)
 
@@ -335,8 +335,8 @@ def add_pattern(platform, step, signal_type, value):
             encoding="utf-8",
         )
     except Exception as e:
-        return False, f"写入 state_patterns.json 失败: {e}"
+        return False, f"Failed to write state_patterns.json: {e}"
 
     reload_patterns()
     total = len(current_list)
-    return True, f"OK: 已将 \"{value}\" 添加到 {platform}.{step}.{signal_type} 列表开头（共 {total} 个）"
+    return True, f"OK: \"{value}\" has been added to the beginning of the {platform}.{step}.{signal_type} list ({total} total)"

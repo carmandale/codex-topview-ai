@@ -1,9 +1,9 @@
-"""AI 判断引擎 — 在弹窗处理、成功判定、失败诊断环节提供语义理解能力。
+"""AI judgment engine - Provides semantic understanding capabilities in pop-up processing, success determination, and failure diagnosis.
 
-使用 Kimi K2.5 (Moonshot AI) 的 OpenAI 兼容 API。
-通过 page_sense 模块获取结构化 DOM 快照 + 交互元素列表，给 LLM 更丰富的上下文。
-快路径（选择器/URL）优先；AI 仅在快路径失败时兜底。
-LLM 不可用时静默回退，不阻断上传流程。
+OpenAI compatible API using Kimi K2.5 (Moonshot AI).
+Obtain structured DOM snapshot + interactive element list through the page_sense module to give LLM a richer context.
+The fast path (selector/URL) takes precedence; the AI ​​only bails out if the fast path fails.
+Silently fallback when LLM is unavailable and does not block the upload process.
 """
 
 import json
@@ -44,14 +44,14 @@ def _get_client():
         return _client
     api_key = _load_api_key()
     if not api_key:
-        logger.debug("AI Judge: 未配置 MOONSHOT_API_KEY，AI 判断功能已禁用")
+        logger.debug("AI Judge: MOONSHOT_API_KEY is not configured and the AI ​​judgment function is disabled")
         return None
     try:
         from openai import OpenAI
         _client = OpenAI(api_key=api_key, base_url=_MOONSHOT_BASE_URL, timeout=_TIMEOUT_S, max_retries=0)
         return _client
     except Exception as e:
-        logger.debug(f"AI Judge: OpenAI 客户端初始化失败: {e}")
+        logger.debug(f"AI Judge: OpenAI client initialization failed: {e}")
         return None
 
 
@@ -71,7 +71,7 @@ def _call_llm(system_prompt: str, user_content: str) -> str | None:
         )
         return resp.choices[0].message.content
     except Exception as e:
-        logger.debug(f"AI Judge: LLM 调用失败: {e}")
+        logger.debug(f"AI Judge: LLM call failed: {e}")
         return None
 
 
@@ -99,7 +99,7 @@ def _parse_json_response(text: str | None) -> dict | None:
 
 
 def _extract_page_context(page, dialog_el=None, use_dom_snapshot: bool = True) -> str:
-    """提取页面上下文，支持结构化 DOM 快照增强。"""
+    """Extract page context and support structured DOM snapshot enhancement."""
     parts = [f"URL: {page.url}"]
 
     if dialog_el:
@@ -136,7 +136,7 @@ def _extract_page_context(page, dialog_el=None, use_dom_snapshot: bool = True) -
             if interactive and interactive != "[]":
                 parts.append(f"Interactive elements:\n{interactive[:2000]}")
         except Exception as e:
-            logger.debug(f"DOM 增强上下文获取失败: {e}")
+            logger.debug(f"DOM enhancement context acquisition failed: {e}")
 
     return "\n".join(parts)
 
@@ -174,7 +174,7 @@ def judge_popup(page, platform: str, dialog_el=None) -> dict | None:
     raw = _call_llm(_POPUP_SYSTEM_PROMPT, user_msg)
     result = _parse_json_response(raw)
     if result and "action" in result:
-        logger.info(f"  🤖 AI 弹窗判断: {result.get('type', '?')} → {result.get('action', '?')} [{result.get('button_text', '')}]")
+        logger.info(f"  🤖 AI pop-up window judgment: {result.get('type', '?')} → {result.get('action', '?')} [{result.get('button_text', '')}]")
         return result
     return None
 
@@ -185,7 +185,7 @@ def judge_success(page, platform: str) -> dict | None:
     raw = _call_llm(_SUCCESS_SYSTEM_PROMPT, user_msg)
     result = _parse_json_response(raw)
     if result and "status" in result:
-        logger.info(f"  🤖 AI 成功判断: {result.get('status', '?')} — {result.get('reason', '?')}")
+        logger.info(f"  🤖 AI success judgment: {result.get('status', '?')} — {result.get('reason', '?')}")
         return result
     return None
 
@@ -211,7 +211,7 @@ JSON format:
 
 
 def diagnose_failure(page, platform: str, step_name: str, error_msg: str) -> dict | None:
-    """诊断步骤失败原因，给出恢复建议。这是步骤级重试的核心 AI 能力。"""
+    """Diagnose the cause of step failure and provide recovery suggestions. This is the core AI capability of step-level retries."""
     context = _extract_page_context(page, use_dom_snapshot=True)
     user_msg = (
         f"Platform: {platform}\n"
@@ -223,7 +223,7 @@ def diagnose_failure(page, platform: str, step_name: str, error_msg: str) -> dic
     result = _parse_json_response(raw)
     if result and "recovery" in result:
         logger.info(
-            f"  🤖 AI 诊断: {result.get('diagnosis', '?')} → {result.get('recovery', '?')}"
+            f"  🤖 AI Diagnosis: {result.get('diagnosis', '?')} → {result.get('recovery', '?')}"
         )
         return result
     return None

@@ -13,14 +13,14 @@ _PROJECT_PROFILE_MARKER = ".social_uploader/chrome_profiles"
 
 
 def _is_project_chrome_process(pid: int) -> tuple[bool, str]:
-    """判断给定 PID 的进程是否为本项目启动的调试 Chrome。
+    """Determine whether the process with the given PID is the debug Chrome started by this project.
 
-    判定依据：进程命令行中必须同时包含
-    - "Google Chrome"   （排除其他 Electron 应用）
-    - "--user-data-dir=" 且路径含 ".social_uploader/chrome_profiles"
-      （排除日常 Chrome 与其他第三方调试 Chrome）
+    Judgment basis: The process command line must also contain
+    - "Google Chrome" (excluding other Electron apps)
+    - "--user-data-dir=" and the path contains ".social_uploader/chrome_profiles"
+      (Excluding daily Chrome and other third-party debug Chrome)
 
-    返回 (is_project_chrome: bool, command_line: str)
+    Return (is_project_chrome: bool, command_line: str)
     """
     try:
         result = subprocess.run(
@@ -29,7 +29,7 @@ def _is_project_chrome_process(pid: int) -> tuple[bool, str]:
         )
         cmd = (result.stdout or "").strip()
     except Exception as e:
-        logger.debug(f"  无法读取 PID {pid} 命令行: {e}")
+        logger.debug(f"  Unable to read PID {pid} Command line: {e}")
         return False, ""
 
     if not cmd:
@@ -42,18 +42,18 @@ def _is_project_chrome_process(pid: int) -> tuple[bool, str]:
 
 
 def kill_browser(port=9222, force=False):
-    """终止占用指定调试端口的"本项目调试 Chrome"，用于账号切换后重新连接。
+    """Terminate the "Debug Chrome for this project" occupying the specified debugging port for reconnection after account switching.
 
-    安全护栏（强制启用，除非 force=True）：
-      - 仅终止命令行包含 ".social_uploader/chrome_profiles" 的 Chrome 进程
-      - 跳过所有"日常 Chrome"（用户自己启动的）
-      - 这样即使 lsof 返回了多个 PID，也绝不会误杀其他 Chrome 实例
+    Safety guardrails (forced on unless force=True):
+      - Only kill Chrome processes whose command line contains ".social_uploader/chrome_profiles"
+      - Skip all "Daily Chrome" (those launched by the user themselves)
+      - This way even if lsof returns multiple PIDs, it will never accidentally kill other Chrome instances
 
     Args:
-        port: 调试端口，默认 9222
-        force: 紧急情况下绕过安全检查（**强烈不推荐**），默认 False
+        port: debugging port, default 9222
+        force: Bypass security checks in emergency situations (**strongly not recommended**), default False
 
-    返回 (killed: bool, message: str)。
+    Return (killed: bool, message: str).
     """
     try:
         result = subprocess.run(
@@ -62,7 +62,7 @@ def kill_browser(port=9222, force=False):
         )
         pids_raw = result.stdout.strip()
         if not pids_raw:
-            return False, f"端口 {port} 上没有运行中的 Chrome 进程"
+            return False, f"There is no Chrome process running on port {port}"
 
         pids = list(set(int(p.strip()) for p in pids_raw.splitlines() if p.strip()))
         killed = []
@@ -74,7 +74,7 @@ def kill_browser(port=9222, force=False):
                 if not is_ours:
                     skipped_safe.append((pid, cmd[:80]))
                     logger.warning(
-                        f"  🛡️ 拒绝终止 PID {pid}：不属于本项目调试 Chrome（user-data-dir 不匹配）"
+                        f"  🛡️ Refuse to terminate PID {pid}: does not belong to this project debugging Chrome (user-data-dir does not match)"
                     )
                     continue
 
@@ -84,22 +84,22 @@ def kill_browser(port=9222, force=False):
             except ProcessLookupError:
                 pass
             except PermissionError:
-                logger.warning(f"  ⚠️ 无权终止进程 {pid}，请手动关闭 Chrome")
+                logger.warning(f"  ⚠️ No permission to terminate process {pid}, please close Chrome manually")
 
         if killed:
             time.sleep(1)
-            msg = f"已终止 {len(killed)} 个本项目调试 Chrome 进程 (PID: {', '.join(str(p) for p in killed)})"
+            msg = f"{len(killed)} debug Chrome processes for this project have been terminated (PID: {', '.join(str(p) for p in killed)})"
             if skipped_safe:
-                msg += f"；安全跳过 {len(skipped_safe)} 个非本项目 Chrome"
+                msg += f";Safely skip {len(skipped_safe)} non-this project Chrome"
             return True, msg
 
         if skipped_safe:
             return False, (
-                f"端口 {port} 上检测到 {len(skipped_safe)} 个 Chrome 进程，"
-                f"但均不属于本项目调试 Chrome（user-data-dir 不匹配），已安全跳过。"
-                f"如需强制终止请显式调用 kill_browser(force=True)。"
+                f"FOREIGN_CHROME: {len(skipped_safe)} Chrome processes detected on port {port},"
+                f"But none of them belong to the debugging Chrome of this project (user-data-dir does not match) and have been safely skipped."
+                f"If you need to force termination, please explicitly call kill_browser(force=True)."
             )
-        return False, "未能终止任何进程"
+        return False, "Could not terminate any process"
 
     except FileNotFoundError:
         try:
@@ -122,7 +122,7 @@ def kill_browser(port=9222, force=False):
                         is_ours, _ = _is_project_chrome_process(pid)
                         if not is_ours:
                             logger.warning(
-                                f"  🛡️ Windows: 拒绝终止 PID {pid}：不属于本项目调试 Chrome"
+                                f"  🛡️ Windows: Termination refused PID {pid}: Not part of this project Debugging Chrome"
                             )
                             continue
                     subprocess.run(["taskkill", "/F", "/PID", str(pid)],
@@ -130,13 +130,13 @@ def kill_browser(port=9222, force=False):
                     killed_win.append(pid)
                 if killed_win:
                     time.sleep(1)
-                    return True, f"已终止端口 {port} 上的 {len(killed_win)} 个本项目 Chrome 进程"
-                return False, f"端口 {port} 上的进程均不属于本项目调试 Chrome，已安全跳过"
-            return False, f"端口 {port} 上没有运行中的进程"
+                    return True, f"{len(killed_win)} Chrome processes for this project on port {port} have been terminated"
+                return False, f"FOREIGN_CHROME: The processes on port {port} do not belong to this project's debug Chrome and were safely skipped."
+            return False, f"There are no processes running on port {port}"
         except FileNotFoundError:
-            return False, "无法检测端口占用（lsof/netstat 均不可用）"
+            return False, "Unable to detect port occupation (lsof/netstat are not available)"
     except Exception as e:
-        return False, f"终止浏览器时出错: {e}"
+        return False, f"Error terminating browser: {e}"
 
 
 _POPUP_GUARD_JS = """
@@ -282,19 +282,19 @@ _POPUP_GUARD_JS = """
 
 
 def inject_popup_guard(page):
-    """注入弹窗自动守卫（MutationObserver），实时拦截并关闭随机弹窗。
+    """Inject pop-up window automatic guard (MutationObserver) to intercept and close random pop-up windows in real time.
 
-    优先级策略：
-      P1 中性关闭（知道了/Got it/OK）→ P2 接受权限（允许/Allow）→ P3 取消（取消/Cancel）
-    安全保护：跳过 YouTube 上传对话框、跳过占满屏幕的主 UI 对话框。
+    Priority strategy:
+      P1 Neutral close (Got it/OK) → P2 Accept permission (Allow) → P3 Cancel (Cancel)
+    Security: Skip the YouTube upload dialog, skip the main UI dialog that fills the screen.
     """
     try:
-        # 用 run_iife 拿 IIFE 返回值（详见 tools/js_runner.py 的 ASI 解释）。
-        # IIFE 本体保留不动，因为还要给 cdp.addScriptToEvaluateOnNewDocument 注入新文档时立即执行。
+        # Use run_iife to get the IIFE return value (see the ASI explanation of tools/js_runner.py for details).
+        # The IIFE body remains unchanged because cdp.addScriptToEvaluateOnNewDocument needs to be executed immediately when a new document is injected.
         from social_uploader.tools.js_runner import run_iife
         result = run_iife(page, _POPUP_GUARD_JS)
         if result == 'activated':
-            logger.info("  🛡️ 弹窗自动守卫已激活")
+            logger.info("  🛡️ Pop-up automatic guard has been activated")
         return result
     except Exception:
         return None
@@ -310,20 +310,20 @@ _STALE_TASK_URL_FRAGMENTS = (
 
 
 def connect_browser(port=9222, new_window=True, data_dir=None):
-    """连接本地 Chrome 调试端口，新开标签页执行任务。
+    """Connect to the local Chrome debugging port and open a new tab to perform the task.
 
-    参数:
-    - port: Chrome 调试端口
-    - new_window: True 时新开标签页执行任务
-    - data_dir: Chrome 用户数据目录（多账号隔离用），为 None 时仅连接已有实例
+    parameter:
+    - port: Chrome debugging port
+    - new_window: True when a new tab page is opened to perform the task
+    - data_dir: Chrome user data directory (for multi-account isolation), if it is None, only existing instances will be connected.
 
-    返回 (ctrl, work, baseline_tab_ids, work_tab_id)：
-    - ctrl: ChromiumPage，用于多标签管理、cleanup
-    - work: 实际执行操作的标签页（新标签页或当前标签）
-    - baseline_tab_ids: 连接时已有的用户标签 id（任务结束后保留）
-    - work_tab_id: 任务标签 id
+    Return (ctrl, work, baseline_tab_ids, work_tab_id):
+    - ctrl: ChromiumPage, used for multi-tab management and cleanup
+    - work: The tab that actually performs the operation (new tab or current tab)
+    - baseline_tab_ids: existing user tag id when connecting (retained after the task is completed)
+    - work_tab_id: task tag id
     """
-    logger.info(f"🚀 正在连接本地浏览器 (端口 {port})...")
+    logger.info(f"🚀 Connecting to local browser (port {port})...")
     co = ChromiumOptions()
     co.set_local_port(port)
     if data_dir:
@@ -352,7 +352,7 @@ def connect_browser(port=9222, new_window=True, data_dir=None):
         work = ctrl.new_tab(url="about:blank")
         work.set.auto_handle_alert(accept=True)
         work_tab_id = work.tab_id
-        logger.info("  📑 已新开标签页执行任务")
+        logger.info("  📑 A new tab has been opened to perform the task")
     else:
         work = ctrl
         work_tab_id = ctrl.tab_id
@@ -361,10 +361,10 @@ def connect_browser(port=9222, new_window=True, data_dir=None):
 
 
 def _close_stale_task_tabs(ctrl):
-    """关闭上次运行遗留的任务标签页，防止标签堆积。
+    """Close the task tabs left over from the last run to prevent tab accumulation.
 
-    仅在 new_window=True（全新上传）时调用。
-    始终保留 all_ids[0]，且清理后确保至少剩 1 个标签。
+    Only called when new_window=True (fresh upload).
+    All_ids[0] is always retained, and ensures that at least 1 tag remains after cleaning.
     """
     try:
         all_ids = list(ctrl.tab_ids)
@@ -387,7 +387,7 @@ def _close_stale_task_tabs(ctrl):
         except Exception:
             pass
     if closed:
-        logger.info(f"  🧹 已清理 {closed} 个上次遗留的任务标签页")
+        logger.info(f"  🧹 Cleaned {closed} task tabs left over from the last time")
 
 
 _OVERLAY_CLEANUP_JS = """
@@ -426,7 +426,7 @@ _JUNK_URL_PREFIXES = (
 
 
 def dismiss_interfering_overlays(ctrl, work, baseline_tab_ids=None):
-    """清理干扰元素：只关闭明确的垃圾标签（空白页/扩展页），保留用户标签和平台标签。"""
+    """Clean up distracting elements: only close clear junk tags (blank pages/extension pages), keep user tags and platform tags."""
     closed_any = False
 
     if baseline_tab_ids is not None and ctrl is not None:
@@ -443,16 +443,16 @@ def dismiss_interfering_overlays(ctrl, work, baseline_tab_ids=None):
                     except Exception:
                         pass
             if closed_any:
-                logger.info("  🧹 已关闭垃圾标签页（空白页/扩展页）")
+                logger.info("  🧹 Junk tab page (blank page/expanded page) has been closed")
         except Exception:
             pass
 
     try:
-        # 用 run_iife 拿 IIFE 返回值（详见 tools/js_runner.py 的 ASI 解释）。
+        # Use run_iife to get the IIFE return value (see the ASI explanation of tools/js_runner.py for details).
         from social_uploader.tools.js_runner import run_iife
         removed = run_iife(work, _OVERLAY_CLEANUP_JS)
         if removed and int(removed) > 0:
-            logger.info(f"  🧹 已清理 {removed} 个扩展/插件干扰元素")
+            logger.info(f"  🧹 Cleaned {removed} extension/plug-in interference elements")
             closed_any = True
     except Exception:
         pass
@@ -461,7 +461,7 @@ def dismiss_interfering_overlays(ctrl, work, baseline_tab_ids=None):
 
 
 def find_first(page_or_el, selectors, timeout_per=1):
-    """在给定的页面/元素中尝试多个选择器，返回第一个命中的 (element, selector)"""
+    """Tries multiple selectors on a given page/element, returning the first hit (element, selector)"""
     for selector in selectors:
         el = page_or_el.ele(selector, timeout=timeout_per)
         if el:
@@ -470,7 +470,7 @@ def find_first(page_or_el, selectors, timeout_per=1):
 
 
 def find_platform_tab(ctrl, url_prefix):
-    """在已有标签中查找 URL 包含 url_prefix 的标签页，用于 resume-from 连接上次失败的窗口。"""
+    """Find the tab page whose URL contains url_prefix in existing tabs, which is used to resume-from the window where the connection failed last time."""
     try:
         for tid in ctrl.tab_ids:
             tab = ctrl.get_tab(tid)
@@ -482,12 +482,12 @@ def find_platform_tab(ctrl, url_prefix):
 
 
 def _select_all_modifier():
-    """macOS 用 Cmd (4)，其他系统用 Ctrl (2)。"""
+    """Cmd (4) for macOS, Ctrl (2) for other systems."""
     return 4 if _platform.system() == 'Darwin' else 2
 
 
 def cdp_click_at(page, x, y):
-    """通过 CDP 在指定坐标发送真实鼠标点击（isTrusted=true）。"""
+    """Send real mouse clicks at specified coordinates via CDP (isTrusted=true)."""
     page.run_cdp('Input.dispatchMouseEvent',
                  type='mousePressed', x=int(x), y=int(y),
                  button='left', clickCount=1)
@@ -497,9 +497,9 @@ def cdp_click_at(page, x, y):
 
 
 def cdp_click_element(page, js_selector):
-    """通过 CDP 点击 JS 选择器定位的元素（isTrusted=true）。
+    """Click through CDP on the element targeted by the JS selector (isTrusted=true).
 
-    返回 True 成功，False 元素不存在。
+    Returns True on success, False if the element does not exist.
     """
     rect = page.run_js(
         'var el = document.querySelector(arguments[0]);'
@@ -516,7 +516,7 @@ def cdp_click_element(page, js_selector):
 
 
 def cdp_press_key(page, key, code, key_code=0):
-    """通过 CDP 发送真实键盘按键（isTrusted=true）。"""
+    """Send real keyboard keystrokes via CDP (isTrusted=true)."""
     page.run_cdp('Input.dispatchKeyEvent',
                  type='keyDown', key=key, code=code,
                  windowsVirtualKeyCode=key_code)
@@ -526,7 +526,7 @@ def cdp_press_key(page, key, code, key_code=0):
 
 
 def cdp_select_all(page):
-    """通过 CDP 发送全选快捷键（macOS: Cmd+A, 其他: Ctrl+A, isTrusted=true）。"""
+    """Send select-all shortcut key via CDP (macOS: Cmd+A, other: Ctrl+A, isTrusted=true)."""
     mod = _select_all_modifier()
     page.run_cdp('Input.dispatchKeyEvent',
                  type='keyDown', key='a', code='KeyA',
@@ -537,34 +537,34 @@ def cdp_select_all(page):
 
 
 def cdp_type_text(page, text):
-    """通过 CDP 输入文本（isTrusted=true）。"""
+    """Input text via CDP (isTrusted=true)."""
     page.run_cdp('Input.insertText', text=text)
 
 
 _PAGE_ERROR_PATTERNS = {
     "tiktok": {
         "url_contains": ["/unavailable"],
-        "texts": ["Feature unavailable", "功能不可用", "Something went wrong", "出错了",
-                  "Page not available", "页面不可用"],
+        "texts": ["Feature unavailable", "Function not available", "Something went wrong", "something went wrong",
+                  "Page not available", "Page unavailable"],
     },
     "instagram": {
         "url_contains": ["/sorry/", "/challenge/", "/suspended", "/disabled"],
-        "texts": ["Sorry, this page isn't available", "此页面不可用",
-                  "Something went wrong", "出错了", "Try Again",
-                  "Your account has been suspended", "你的帐户已被暂停"],
+        "texts": ["Sorry, this page isn't available", "This page is unavailable",
+                  "Something went wrong", "something went wrong", "Try Again",
+                  "Your account has been suspended", "Your account has been suspended"],
     },
     "youtube": {
         "url_contains": ["/oops"],
-        "texts": ["Something went wrong", "出错了", "YouTube Studio is unavailable",
-                  "YouTube Studio 不可用", "This feature isn't available"],
+        "texts": ["Something went wrong", "something went wrong", "YouTube Studio is unavailable",
+                  "YouTube Studio is unavailable", "This feature isn't available"],
     },
 }
 
 
 def check_page_error(page, platform):
-    """检测页面是否处于平台错误状态（功能不可用、维护中等）。
+    """Detect whether the page is in a platform error state (function unavailable, maintenance medium).
 
-    返回 (has_error, description)。has_error=True 时 description 描述错误原因。
+    Return (has_error, description). When has_error=True, description describes the cause of the error.
     """
     patterns = _PAGE_ERROR_PATTERNS.get(platform, {})
     current_url = (page.url or "").lower()
@@ -586,7 +586,7 @@ def check_page_error(page, platform):
 
 
 def cleanup_tabs(ctrl, baseline_tab_ids):
-    """关闭本次任务新开的标签页，保留连接前已存在的标签。"""
+    """Close the newly opened tab page for this task and keep the tabs that existed before the connection."""
     if baseline_tab_ids is None or ctrl is None:
         return
     try:

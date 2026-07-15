@@ -17,10 +17,10 @@ _PLATFORM_CODEC_REQUIREMENTS = {
 
 
 def detect_video_codec(video_path: str) -> str:
-    """通过扫描 MP4 box 中的编码标记检测视频编码。
+    """Detect video encoding by scanning the encoding mark in the MP4 box.
 
-    同时扫描文件头部和尾部（各 1MB）以覆盖 moov 在文件末尾的情况。
-    返回 'h264'/'h265'/'mpeg4'/'unknown'。
+    Scan both the beginning and the end of the file (1MB each) to cover the case where moov is at the end of the file.
+    Return 'h264'/'h265'/'mpeg4'/'unknown'.
     """
     try:
         file_size = os.path.getsize(video_path)
@@ -46,7 +46,7 @@ def detect_video_codec(video_path: str) -> str:
 
 
 def check_codec_compatibility(video_path: str, platform: str) -> tuple[bool, str]:
-    """检查视频编码是否与目标平台兼容。返回 (compatible, warning_msg)。"""
+    """Check whether the video encoding is compatible with the target platform. Return (compatible, warning_msg)."""
     req = _PLATFORM_CODEC_REQUIREMENTS.get(platform)
     if not req:
         return True, ""
@@ -61,37 +61,37 @@ def check_codec_compatibility(video_path: str, platform: str) -> tuple[bool, str
     required = req["required"]
     codec_name = {"h265": "H.265/HEVC", "mpeg4": "MPEG-4 Part 2"}.get(codec, codec)
     return False, (
-        f"视频编码为 {codec_name}，{platform.title()} 要求 {required}。"
-        f"该视频可能被平台静默拒绝。请使用 H.264 编码的视频。"
+        f"The video is encoded as {codec_name}, {platform.title()} requires {required}."
+        f"The video may be silently rejected by the platform. Please use H.264 encoded video."
     )
 
 
 def validate_video_file(video_path, platform=None):
-    """上传前预校验视频文件，返回 (ok, error_msg)。
+    """Pre-verify the video file before uploading and return (ok, error_msg).
 
-    platform 可选，传入时额外检查编码兼容性（不兼容仅警告不阻断）。
+    platform is optional, additionally checks encoding compatibility when passed in (incompatible only warns but does not block).
     """
     if not os.path.exists(video_path):
-        return False, f"文件不存在: {video_path}"
+        return False, f"File does not exist: {video_path}"
     ext = os.path.splitext(video_path)[1].lower()
     if ext not in VALID_VIDEO_EXTENSIONS:
-        return False, f"不支持的视频格式 '{ext}'，支持: {', '.join(sorted(VALID_VIDEO_EXTENSIONS))}"
+        return False, f"Unsupported video format '{ext}', supported: {', '.join(sorted(VALID_VIDEO_EXTENSIONS))}"
     file_size = os.path.getsize(video_path)
     if file_size < MIN_VIDEO_SIZE_BYTES:
-        return False, f"文件过小 ({file_size} bytes)，可能不是有效视频"
+        return False, f"The file is too small ({file_size} bytes) and may not be a valid video"
 
     if platform:
         compat, warn = check_codec_compatibility(video_path, platform)
         if not compat:
-            logger.warning(f"⚠️ 编码警告: {warn}")
+            logger.warning(f"⚠️ Encoding warning: {warn}")
 
     return True, ""
 
 
 def log_login_error(platform):
-    """统一的未登录错误输出"""
-    logger.error(f"\n❌ 检测到 {platform} 未登录！请在浏览器中手动完成登录后重新执行。")
-    logger.warning("⚠️ 安全提示：本工具不会处理您的账号密码，请自行在浏览器中访问对应平台完成登录。")
+    """Unified not logged in error output"""
+    logger.error(f"\n❌ {platform} not logged in detected! Please log in manually in the browser and then execute it again.")
+    logger.warning("⚠️ Security Tip: This tool will not process your account password. Please visit the corresponding platform in your browser to complete the login.")
 
 
 _LOGIN_SIGNALS = {
@@ -102,20 +102,20 @@ _LOGIN_SIGNALS = {
 
 
 def quick_login_check(page, platform):
-    """快速检查当前页面是否处于已登录状态。
+    """Quickly check whether the current page is logged in.
 
-    比各平台 login 步骤更前置——在导航到目标页之前调用，
-    若检测到登录页面 URL 特征则立即终止，节省后续流程的时间。
+    More forward than the login step of each platform - called before navigating to the target page,
+    If the login page URL characteristics are detected, it will be terminated immediately to save time in subsequent processes.
 
-    返回 (logged_in: bool, detail: str)。
+    Return (logged_in: bool, detail: str).
     """
     try:
         url = (page.url or "").lower()
     except Exception:
-        return True, "无法获取 URL，跳过预检"
+        return True, "Unable to get URL, skipping preflight"
 
     signals = _LOGIN_SIGNALS.get(platform, [])
     for signal in signals:
         if signal.lower() in url:
-            return False, f"URL 包含登录信号 '{signal}'"
+            return False, f"URL contains login signal '{signal}'"
     return True, "ok"

@@ -1,6 +1,6 @@
 {
   "name": "topview-ai",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Use TopView AI from Codex to research competitors, write video scripts and prompts, generate media and Storyboard previews, and publish videos to TikTok, Instagram, and YouTube.",
   "author": {
     "name": "Topview AI",
@@ -46,9 +46,7 @@
     "defaultPrompt": [
       "Write a short-form product video script.",
       "Collect competitor content ideas from YouTube and Reddit.",
-      "Generate a Storyboard preview for this drama beat.",
-      "Generate a short product video.",
-      "Upload this video to YouTube."
+      "Generate a Storyboard preview for this drama beat."
     ],
     "brandColor": "#2F46FF",
     "composerIcon": "./assets/topview-logo.png",

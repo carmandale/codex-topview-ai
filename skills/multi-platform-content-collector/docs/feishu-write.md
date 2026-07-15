@@ -1,12 +1,12 @@
-# 飞书表格写入
+# Feishu form writing
 
-本步骤把 `/tmp/collector_verified.jsonl` 中已经验证的数据写入飞书表格。字段不固定，必须按用户本次采集目标决定表头和列顺序。
+This step writes the verified data in `/tmp/collector_verified.jsonl` into the Feishu table. The fields are not fixed, and the header and column order must be determined according to the user's current collection goal.
 
 ---
 
-## 1. 生成行数据
+## 1. Generate row data
 
-示例：通用采集表格。
+Example: Universal collection form.
 
 ```bash
 SKILL_DIR="$HOME/.codex/skills/multi-platform-content-collector"
@@ -35,21 +35,21 @@ with open('/tmp/rows.json', 'w', encoding='utf-8') as f:
 PY
 ```
 
-如果用户要的是提示词库，可把最后一列换成 `prompt`，表头使用“完整提示词”。
+If the user wants a prompt word library, the last column can be replaced by `prompt`, and the header uses "complete prompt word".
 
 ---
 
-## 2. 创建表格
+## 2. Create a table
 
-按本次字段创建表头，例如：
+Create a header based on this field, for example:
 
 ```bash
 lark-cli sheets +create --as user \
-  --title "<关键词> 多平台数据采集" \
-  --headers '["平台","标题/来源","作者","发布时间","指标","链接","摘要/发现"]'
+  --title "<Keywords> Multi-platform data collection" \
+  --headers '["Platform","Title/Source","Author","Published","Metrics","Link","Abstract/Findings"]'
 ```
 
-记录返回的 `url`，然后获取 `sheet_id`：
+Log the returned `url`, and then obtain `sheet_id`:
 
 ```bash
 lark-cli sheets +info --url "<URL>" | python3 -c "
@@ -60,30 +60,30 @@ print(data['data']['sheets']['sheets'][0]['sheet_id'])"
 
 ---
 
-## 3. 写入数据
+## 3. Write data
 
 ```bash
 python3 "$SKILL_DIR/scripts/write_rows.py" "<URL>" "<sheet_id>" /tmp/rows.json
 ```
 
-脚本会逐行写入，避免长文本被截断，并支持失败重试。
+The script is written line by line to avoid truncation of long text and supports retry on failure.
 
 ---
 
-## 4. 写后验证
+## 4. Verify after writing
 
 ```bash
 lark-cli sheets +read --as user --url "<URL>" --sheet-id "<sheet_id>"
 ```
 
-检查：
+examine:
 
-- 行数 = `/tmp/rows.json` 中的行数。
-- 关键字段不为空。
-- 长文本末尾没有被截断。
+- Number of rows = number of rows in `/tmp/rows.json`.
+- Key field is not empty.
+- Long text is not truncated at the end.
 
-如有缺失行，用 `start_index` 参数断点续写：
+If there are missing lines, use the `start_index` parameter breakpoint to continue writing:
 
 ```bash
-python3 "$SKILL_DIR/scripts/write_rows.py" "<URL>" "<sheet_id>" /tmp/rows.json <失败行索引>
+python3 "$SKILL_DIR/scripts/write_rows.py" "<URL>" "<sheet_id>" /tmp/rows.json <Failed row index>
 ```

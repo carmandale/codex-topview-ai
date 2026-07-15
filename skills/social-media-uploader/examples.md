@@ -1,74 +1,74 @@
-# 使用示例
+# Usage example
 
-## 单平台上传（默认配置）
+## Single platform upload (default configuration)
 
 ### TikTok
 ```bash
-.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅"
+.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip"
 ```
 
-### TikTok（带封面图）
+### TikTok (with cover image)
 ```bash
-.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅" --cover "/Users/xxx/cover.jpg"
+.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip" --cover "/Users/xxx/cover.jpg"
 ```
 
 ### Instagram
 ```bash
-.venv/bin/social-upload instagram --video "/Users/xxx/vlog.mp4" --caption "周末探店 🍜 #美食 #vlog"
+.venv/bin/social-upload instagram --video "/Users/xxx/vlog.mp4" --caption "Weekend store visit 🍜 #food #vlog"
 ```
 
 ### YouTube
 ```bash
-.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅"
+.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip"
 ```
 
-## 定时发布和可见性（--schedule / --visibility）
+## Scheduled publishing and visibility (--schedule/--visibility)
 
-### TikTok 定时发布
+### TikTok scheduled release
 ```bash
-.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅" --schedule "2026-04-10 15:00"
+.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip" --schedule "2026-04-10 15:00"
 ```
 
-### TikTok 好友可见 + 定时发布
+### Visible to TikTok friends + scheduled publishing
 ```bash
-.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅" --schedule "2026-04-10 15:00" --visibility friends
+.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip" --schedule "2026-04-10 15:00" --visibility friends
 ```
 
-### YouTube 定时发布
+### YouTube scheduled releases
 ```bash
-.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅" --schedule "2026-04-10 15:00"
+.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip" --schedule "2026-04-10 15:00"
 ```
 
-### YouTube 不公开列出
+### Unlisted on YouTube
 ```bash
-.venv/bin/social-upload youtube --video "/Users/xxx/draft.mp4" --title "草稿" --description "测试用" --visibility unlisted
+.venv/bin/social-upload youtube --video "/Users/xxx/draft.mp4" --title "draft" --description "for testing" --visibility unlisted
 ```
 
-### YouTube 私享模式
+### YouTube private mode
 ```bash
-.venv/bin/social-upload youtube --video "/Users/xxx/draft.mp4" --title "草稿" --description "测试用" --visibility private
+.venv/bin/social-upload youtube --video "/Users/xxx/draft.mp4" --title "draft" --description "for testing" --visibility private
 ```
 
-## 使用自定义配置（--profile，用于复杂配置）
+## Use custom configuration (--profile, for complex configuration)
 
-### YouTube 面向儿童 + 加标签
+### YouTube for kids + tagged
 
-先创建配置文件 `kids.json`：
+First create the configuration file `kids.json`:
 ```json
 {
   "youtube": {
     "made_for_kids": true,
-    "tags": "玩具,开箱,评测"
+    "tags": "toys, unboxing, review"
   }
 }
 ```
 
-然后上传（可同时使用 --visibility 和 --profile）：
+Then upload (can use --visibility and --profile together):
 ```bash
-.venv/bin/social-upload youtube --video "/Users/xxx/toy_review.mp4" --title "玩具开箱" --description "今天开箱的是..." --visibility unlisted --profile kids.json
+.venv/bin/social-upload youtube --video "/Users/xxx/toy_review.mp4" --title "Toy unboxing" --description "What I unboxed today is..." --visibility unlisted --profile kids.json
 ```
 
-### TikTok AI 生成标记 + 内容披露
+### TikTok AI generated tags + content disclosure
 
 ```json
 {
@@ -80,45 +80,45 @@
 ```
 
 ```bash
-.venv/bin/social-upload tiktok --video "/Users/xxx/ai_video.mp4" --title "AI 创作" --description "AI 生成的内容" --schedule "2026-04-10 10:00" --profile ai_config.json
+.venv/bin/social-upload tiktok --video "/Users/xxx/ai_video.mp4" --title "AI creation" --description "AI-generated content" --schedule "2026-04-10 10:00" --profile ai_config.json
 ```
 
-## 仅填表单不发布
+## Just fill in the form without publishing
 
 ```bash
-.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "测试" --description "测试描述" --no-publish
+.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "test" --description "Test description" --no-publish
 ```
 
-## 从断点恢复（AI 自动修复时使用）
+## Resume from breakpoint (used when AI automatically repairs)
 
 ```bash
-.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "标题" --description "描述" --resume-from publish
+.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "title" --description "describe" --resume-from publish
 ```
 
-## 切换账号后重启浏览器
+## Restart the browser after switching accounts
 
 ```bash
-# 终止旧的调试浏览器，然后用新账号重新启动
+# Terminate the old debug browser and restart with the new account
 .venv/bin/social-upload restart-browser
 
-# 重新启动调试浏览器（macOS）
+# Restart the debug browser (macOS)
 bash scripts/start_chrome_debug.sh
 
-# 重新启动调试浏览器（Windows）
+# Restart the debug browser (Windows)
 scripts\start_chrome_debug.bat
 ```
 
-## 全平台依次上传
+## All platforms are uploaded sequentially
 
-依次执行三个命令，每个完成后汇报结果再执行下一个：
+Execute three commands in sequence, report the results after each is completed, and then execute the next one:
 
 ```bash
 # 1. TikTok
-.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅"
+.venv/bin/social-upload tiktok --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip"
 
 # 2. Instagram
-.venv/bin/social-upload instagram --video "/Users/xxx/vlog.mp4" --caption "周末探店 🍜 记录周末的美食之旅"
+.venv/bin/social-upload instagram --video "/Users/xxx/vlog.mp4" --caption "Weekend shop visit 🍜 Record your weekend food trip"
 
 # 3. YouTube
-.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "周末探店" --description "记录周末的美食之旅"
+.venv/bin/social-upload youtube --video "/Users/xxx/vlog.mp4" --title "Weekend store visit" --description "Record your weekend food trip"
 ```

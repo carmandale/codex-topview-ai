@@ -1,5 +1,5 @@
 {
-  "_comment": "默认上传配置 — 不传 --profile 时自动使用。common 为各平台公共默认值，平台段可覆盖 common。",
+  "_comment": "Default upload configuration - automatically used when --profile is not passed. common is the common default value for each platform, and the platform segment can override common.",
 
   "common": {},
 

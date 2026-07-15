@@ -8,139 +8,139 @@ from social_uploader.repair_engine import generate_run_id
 def main():
     parser = argparse.ArgumentParser(
         prog='social-upload',
-        description='社交媒体视频自动上传工具（TikTok / Instagram / YouTube）',
+        description='Social media video automatic upload tool (TikTok / Instagram / YouTube)',
     )
-    subparsers = parser.add_subparsers(dest='platform', required=True, help='目标平台')
+    subparsers = parser.add_subparsers(dest='platform', required=True, help='target platform')
 
-    # --- 公共账号参数 ---
-    _account_help = '使用指定账号上传（不传则用上次使用的账号）'
+    # ---Public account parameters ---
+    _account_help = 'Use the specified account to upload (if not uploaded, the last account used will be used)'
 
     # --- TikTok ---
-    p_tk = subparsers.add_parser('tiktok', help='上传到 TikTok')
-    p_tk.add_argument('--video', required=True, help='视频文件路径')
-    p_tk.add_argument('--title', required=True, help='视频标题')
-    p_tk.add_argument('--description', required=True, help='视频描述')
-    p_tk.add_argument('--cover', default=None, help='封面图路径（可选，支持 jpg/png）')
-    p_tk.add_argument('--no-publish', action='store_true', help='填好表单但不点发布')
-    p_tk.add_argument('--resume-from', default=None, help='从指定步骤恢复执行')
-    p_tk.add_argument('--profile', default=None, help='上传配置文件路径（JSON），不传则用默认配置')
-    p_tk.add_argument('--schedule', default=None, help='定时发布时间（格式: "YYYY-MM-DD HH:MM"），不传则立即发布')
-    p_tk.add_argument('--visibility', default=None, help='可见性: everyone / friends / only_me（默认 everyone）')
+    p_tk = subparsers.add_parser('tiktok', help='Upload to TikTok')
+    p_tk.add_argument('--video', required=True, help='Video file path')
+    p_tk.add_argument('--title', required=True, help='video title')
+    p_tk.add_argument('--description', required=True, help='Video description')
+    p_tk.add_argument('--cover', default=None, help='Cover image path (optional, supports jpg/png)')
+    p_tk.add_argument('--no-publish', action='store_true', help='Fill out the form but don’t click publish')
+    p_tk.add_argument('--resume-from', default=None, help='Resume execution from specified step')
+    p_tk.add_argument('--profile', default=None, help='Upload the configuration file path (JSON). If not uploaded, the default configuration will be used.')
+    p_tk.add_argument('--schedule', default=None, help='Scheduled release time (format: "YYYY-MM-DD HH:MM"), if not passed, it will be released immediately')
+    p_tk.add_argument('--visibility', default=None, help='Visibility: everyone / friends / only_me (default everyone)')
     p_tk.add_argument('--account', default=None, help=_account_help)
 
     # --- Instagram ---
-    p_ig = subparsers.add_parser('instagram', help='上传到 Instagram')
-    p_ig.add_argument('--video', required=True, help='视频文件路径')
-    p_ig.add_argument('--caption', required=True, help='发布文案')
-    p_ig.add_argument('--no-publish', action='store_true', help='填好表单但不点分享')
-    p_ig.add_argument('--resume-from', default=None, help='从指定步骤恢复执行')
-    p_ig.add_argument('--profile', default=None, help='上传配置文件路径（JSON），不传则用默认配置')
-    p_ig.add_argument('--schedule', default=None, help='Instagram 不支持定时发布，传入会被自动忽略')
-    p_ig.add_argument('--visibility', default=None, help='Instagram 不支持可见性设置，传入会被自动忽略')
+    p_ig = subparsers.add_parser('instagram', help='Upload to Instagram')
+    p_ig.add_argument('--video', required=True, help='Video file path')
+    p_ig.add_argument('--caption', required=True, help='Post copy')
+    p_ig.add_argument('--no-publish', action='store_true', help='Fill out the form but don’t click share')
+    p_ig.add_argument('--resume-from', default=None, help='Resume execution from specified step')
+    p_ig.add_argument('--profile', default=None, help='Upload the configuration file path (JSON). If not uploaded, the default configuration will be used.')
+    p_ig.add_argument('--schedule', default=None, help='Instagram does not support scheduled posting, and incoming messages will be automatically ignored.')
+    p_ig.add_argument('--visibility', default=None, help='Instagram does not support visibility settings, incoming messages are automatically ignored')
     p_ig.add_argument('--account', default=None, help=_account_help)
 
     # --- YouTube ---
-    p_yt = subparsers.add_parser('youtube', help='上传到 YouTube')
-    p_yt.add_argument('--video', required=True, help='视频文件路径')
-    p_yt.add_argument('--title', required=True, help='视频标题')
-    p_yt.add_argument('--description', required=True, help='视频描述')
-    p_yt.add_argument('--no-publish', action='store_true', help='填好表单但不点发布')
-    p_yt.add_argument('--resume-from', default=None, help='从指定步骤恢复执行')
-    p_yt.add_argument('--profile', default=None, help='上传配置文件路径（JSON），不传则用默认配置')
-    p_yt.add_argument('--schedule', default=None, help='定时发布时间（格式: "YYYY-MM-DD HH:MM"），不传则立即发布')
-    p_yt.add_argument('--visibility', default=None, help='可见性: public / unlisted / private（默认 public）')
+    p_yt = subparsers.add_parser('youtube', help='Upload to YouTube')
+    p_yt.add_argument('--video', required=True, help='Video file path')
+    p_yt.add_argument('--title', required=True, help='video title')
+    p_yt.add_argument('--description', required=True, help='Video description')
+    p_yt.add_argument('--no-publish', action='store_true', help='Fill out the form but don’t click publish')
+    p_yt.add_argument('--resume-from', default=None, help='Resume execution from specified step')
+    p_yt.add_argument('--profile', default=None, help='Upload the configuration file path (JSON). If not uploaded, the default configuration will be used.')
+    p_yt.add_argument('--schedule', default=None, help='Scheduled release time (format: "YYYY-MM-DD HH:MM"), if not passed, it will be released immediately')
+    p_yt.add_argument('--visibility', default=None, help='Visibility: public / unlisted / private (default public)')
     p_yt.add_argument('--account', default=None, help=_account_help)
 
-    # --- Account 账号管理 ---
-    p_acc = subparsers.add_parser('account', help='管理上传账号')
-    acc_sub = p_acc.add_subparsers(dest='account_action', required=True, help='账号操作')
-    acc_add = acc_sub.add_parser('add', help='添加新账号')
-    acc_add.add_argument('name', help='账号名称')
-    acc_add.add_argument('--login', action='store_true', help='创建后立即启动浏览器登录')
-    acc_rm = acc_sub.add_parser('remove', help='删除账号')
-    acc_rm.add_argument('name', help='账号名称')
-    acc_rm.add_argument('--delete-data', action='store_true', help='同时删除 Chrome 数据目录')
-    acc_sub.add_parser('list', help='列出所有账号')
-    acc_login = acc_sub.add_parser('login', help='启动浏览器登录指定账号')
-    acc_login.add_argument('name', nargs='?', default=None, help='账号名称（不传则用当前账号）')
-    acc_login.add_argument('--debug', action='store_true', help='（已废弃，默认就带调试端口）')
+    # --- Account account management ---
+    p_acc = subparsers.add_parser('account', help='Manage upload account')
+    acc_sub = p_acc.add_subparsers(dest='account_action', required=True, help='Account operation')
+    acc_add = acc_sub.add_parser('add', help='Add new account')
+    acc_add.add_argument('name', help='Account name')
+    acc_add.add_argument('--login', action='store_true', help='Start browser login immediately after creation')
+    acc_rm = acc_sub.add_parser('remove', help='Delete account')
+    acc_rm.add_argument('name', help='Account name')
+    acc_rm.add_argument('--delete-data', action='store_true', help='Also delete the Chrome data directory')
+    acc_sub.add_parser('list', help='List all accounts')
+    acc_login = acc_sub.add_parser('login', help='Start the browser to log in to the specified account')
+    acc_login.add_argument('name', nargs='?', default=None, help='Account name (if not passed, the current account will be used)')
+    acc_login.add_argument('--debug', action='store_true', help='(Deprecated, with debug port by default)')
 
     # --- Diag ---
-    p_diag = subparsers.add_parser('diag', help='诊断：提取当前浏览器页面的精简 DOM')
-    p_diag.add_argument('--area', default=None, help='目标区域 CSS 选择器（可选）')
+    p_diag = subparsers.add_parser('diag', help='Diagnosis: Extract the condensed DOM of the current browser page')
+    p_diag.add_argument('--area', default=None, help='Target area CSS selector (optional)')
 
     # --- Suggest Selectors ---
-    p_suggest = subparsers.add_parser('suggest-selectors', help='从最近失败的 DOM 片段中推荐候选选择器')
-    p_suggest.add_argument('--run-id', required=True, help='失败的 run_id（从 DIAG| 行获取）')
+    p_suggest = subparsers.add_parser('suggest-selectors', help='Recommend candidate selectors from recently failed DOM fragments')
+    p_suggest.add_argument('--run-id', required=True, help='failed run_id (obtained from DIAG| line)')
 
     # --- Fix Selector ---
-    p_fix = subparsers.add_parser('fix-selector', help='安全地向 button_config.json 添加新选择器')
-    p_fix.add_argument('--target', required=True, dest='target_platform', help='目标平台（youtube/tiktok/instagram）')
-    p_fix.add_argument('--key', required=True, help='选择器 key（如 post_button）')
-    p_fix.add_argument('--selector', required=True, help='新的 DrissionPage 选择器字符串')
+    p_fix = subparsers.add_parser('fix-selector', help='Safely add new selectors to button_config.json')
+    p_fix.add_argument('--target', required=True, dest='target_platform', help='Target platform (youtube/tiktok/instagram)')
+    p_fix.add_argument('--key', required=True, help='Selector key (such as post_button)')
+    p_fix.add_argument('--selector', required=True, help='New DrissionPage selector string')
 
     # --- Suggest Patterns ---
-    p_sp = subparsers.add_parser('suggest-patterns', help='从最近失败的 DOM 快照中推荐候选状态信号')
-    p_sp.add_argument('--run-id', required=True, help='失败的 run_id（从 DIAG| 行获取）')
+    p_sp = subparsers.add_parser('suggest-patterns', help='Recommend candidate state signals from recently failed DOM snapshots')
+    p_sp.add_argument('--run-id', required=True, help='failed run_id (obtained from DIAG| line)')
 
     # --- Fix Pattern ---
-    p_fp = subparsers.add_parser('fix-pattern', help='安全地向 state_patterns.json 添加新状态信号')
-    p_fp.add_argument('--target', required=True, dest='target_platform', help='目标平台（youtube/tiktok/instagram）')
-    p_fp.add_argument('--step', required=True, help='步骤名（如 confirm / wait_upload）')
-    p_fp.add_argument('--signal', required=True, help='信号类型（如 success_signals / error_signals）')
-    p_fp.add_argument('--value', required=True, help='新的选择器字符串（如 "text:Published"）')
+    p_fp = subparsers.add_parser('fix-pattern', help='Safely add new state signals to state_patterns.json')
+    p_fp.add_argument('--target', required=True, dest='target_platform', help='Target platform (youtube/tiktok/instagram)')
+    p_fp.add_argument('--step', required=True, help='Step name (such as confirm / wait_upload)')
+    p_fp.add_argument('--signal', required=True, help='Signal type, such as success_signals or error_signals')
+    p_fp.add_argument('--value', required=True, help='New selector string, such as "text:Published"')
 
     # --- Show Recipe ---
-    p_sr = subparsers.add_parser('show-recipe', help='查看交互配方的当前配置')
-    p_sr.add_argument('--target', required=True, dest='target_platform', help='目标平台（youtube/tiktok/instagram）')
-    p_sr.add_argument('--recipe', required=True, help='配方名（如 schedule_recipe）')
+    p_sr = subparsers.add_parser('show-recipe', help='View the current configuration of interactive recipes')
+    p_sr.add_argument('--target', required=True, dest='target_platform', help='Target platform (youtube/tiktok/instagram)')
+    p_sr.add_argument('--recipe', required=True, help='Recipe name (such as schedule_recipe)')
 
     # --- Fix Recipe ---
-    p_fr = subparsers.add_parser('fix-recipe', help='更新交互配方中某一步的选择器')
-    p_fr.add_argument('--target', required=True, dest='target_platform', help='目标平台（youtube/tiktok/instagram）')
-    p_fr.add_argument('--recipe', required=True, help='配方名（如 schedule_recipe）')
-    p_fr.add_argument('--step', required=True, help='步骤 ID（如 set_date）')
-    p_fr.add_argument('--selector', required=True, help='新的 CSS 选择器')
+    p_fr = subparsers.add_parser('fix-recipe', help='Update the selector of a step in an interactive recipe')
+    p_fr.add_argument('--target', required=True, dest='target_platform', help='Target platform (youtube/tiktok/instagram)')
+    p_fr.add_argument('--recipe', required=True, help='Recipe name (such as schedule_recipe)')
+    p_fr.add_argument('--step', required=True, help='Step ID (such as set_date)')
+    p_fr.add_argument('--selector', required=True, help='New CSS selectors')
 
     # --- Restart Browser ---
-    p_rb = subparsers.add_parser('restart-browser', help='终止调试端口上的 Chrome，用于切换账号后重新连接')
-    p_rb.add_argument('--port', type=int, default=9222, help='调试端口号（默认 9222）')
+    p_rb = subparsers.add_parser('restart-browser', help='Terminate Chrome on the debug port to reconnect after switching accounts')
+    p_rb.add_argument('--port', type=int, default=9222, help='Debug port number (default 9222)')
 
-    # --- Monitor 数据监控 ---
-    p_mon = subparsers.add_parser('monitor', help='社交媒体数据监控与分析（通过 OpenCLI 采集）')
-    mon_sub = p_mon.add_subparsers(dest='monitor_action', required=True, help='监控操作')
+    # ---Monitor data monitoring ---
+    p_mon = subparsers.add_parser('monitor', help='Social media data monitoring and analysis (collected via OpenCLI)')
+    mon_sub = p_mon.add_subparsers(dest='monitor_action', required=True, help='Monitor operations')
 
-    mon_config = mon_sub.add_parser('config', help='配置账号的平台映射')
-    mon_config.add_argument('--account', default='default', help='账号名称（默认 default）')
-    mon_config.add_argument('--youtube', default=None, help='YouTube: true/false（频道 ID 由浏览器实时获取）')
+    mon_config = mon_sub.add_parser('config', help='Configure account platform mapping')
+    mon_config.add_argument('--account', default='default', help='Account name (default default)')
+    mon_config.add_argument('--youtube', default=None, help='YouTube: true/false (channel ID is obtained by the browser in real time)')
     mon_config.add_argument('--tiktok', default=None, help='TikTok: true/false')
     mon_config.add_argument('--instagram', default=None, help='Instagram: true/false')
-    mon_config.add_argument('--douyin', default=None, help='抖音: true/false')
+    mon_config.add_argument('--douyin', default=None, help='TikTok: true/false')
 
     _platforms_help = (
-        '只对指定平台执行（逗号分隔，可选 youtube/tiktok/instagram/douyin），'
-        '不传则覆盖账号所有已配置平台。例: --platforms tiktok 或 --platforms youtube,tiktok'
+        'Only execute on specified platforms (comma separated, optional youtube/tiktok/instagram/douyin),'
+        'If not passed, all configured platforms of the account will be overwritten. Example: --platforms tiktok or --platforms youtube,tiktok'
     )
 
-    mon_collect = mon_sub.add_parser('collect', help='采集各平台数据看板（通过 opencli）')
-    mon_collect.add_argument('--account', default='default', help='账号名称（默认 default）')
-    mon_collect.add_argument('--no-report', action='store_true', help='只采集不生成报告')
-    mon_collect.add_argument('--format', default='terminal', choices=['md', 'html', 'terminal'], help='报告格式（默认 terminal）')
-    mon_collect.add_argument('--period', type=int, default=28, help='分析周期天数（默认 28）')
+    mon_collect = mon_sub.add_parser('collect', help='Collect data dashboards from each platform (via opencli)')
+    mon_collect.add_argument('--account', default='default', help='Account name (default default)')
+    mon_collect.add_argument('--no-report', action='store_true', help='Only collect but do not generate reports')
+    mon_collect.add_argument('--format', default='terminal', choices=['md', 'html', 'terminal'], help='Report format (default terminal)')
+    mon_collect.add_argument('--period', type=int, default=28, help='Analysis cycle number of days (default 28)')
     mon_collect.add_argument('--platforms', default=None, help=_platforms_help)
 
-    mon_report = mon_sub.add_parser('report', help='生成数据分析报告')
-    mon_report.add_argument('--format', default='md', choices=['md', 'html', 'terminal'], help='输出格式（默认 md）')
-    mon_report.add_argument('--period', type=int, default=28, help='分析周期天数（默认 28）')
-    mon_report.add_argument('--account', default='default', help='账号名称（默认 default）')
-    mon_report.add_argument('--output', default=None, help='自定义报告保存路径')
+    mon_report = mon_sub.add_parser('report', help='Generate data analysis reports')
+    mon_report.add_argument('--format', default='md', choices=['md', 'html', 'terminal'], help='Output format (default md)')
+    mon_report.add_argument('--period', type=int, default=28, help='Analysis cycle number of days (default 28)')
+    mon_report.add_argument('--account', default='default', help='Account name (default default)')
+    mon_report.add_argument('--output', default=None, help='Customized report save path')
     mon_report.add_argument('--platforms', default=None, help=_platforms_help)
 
-    mon_run = mon_sub.add_parser('run', help='一键采集 + 生成报告')
-    mon_run.add_argument('--format', default='md', choices=['md', 'html', 'terminal'], help='输出格式（默认 md）')
-    mon_run.add_argument('--period', type=int, default=28, help='分析周期天数（默认 28）')
-    mon_run.add_argument('--account', default='default', help='账号名称（默认 default）')
-    mon_run.add_argument('--output', default=None, help='自定义报告保存路径')
+    mon_run = mon_sub.add_parser('run', help='One-click collection + report generation')
+    mon_run.add_argument('--format', default='md', choices=['md', 'html', 'terminal'], help='Output format (default md)')
+    mon_run.add_argument('--period', type=int, default=28, help='Analysis cycle number of days (default 28)')
+    mon_run.add_argument('--account', default='default', help='Account name (default default)')
+    mon_run.add_argument('--output', default=None, help='Customized report save path')
     mon_run.add_argument('--platforms', default=None, help=_platforms_help)
 
     args = parser.parse_args()
@@ -151,22 +151,22 @@ def main():
         datefmt='%H:%M:%S',
     )
 
-    # --- 数据监控分支 ---
+    # ---Data monitoring branch ---
     if args.platform == 'monitor':
         _handle_monitor(args)
         sys.exit(0)
 
-    # --- 账号管理分支 ---
+    # ---Account Management Branch ---
     if args.platform == 'account':
         from social_uploader.account_manager import (
             add_account, remove_account, list_accounts,
             launch_chrome_for_account, launch_chrome_for_login, get_data_dir,
-        )  # launch_chrome_for_login 保留以向后兼容
+        )  # launch_chrome_for_login reserved for backward compatibility
         if args.account_action == 'add':
             ok, msg = add_account(args.name)
             if ok:
-                print(f"✅ 账号 '{args.name}' 已创建")
-                print(f"   数据目录: {msg}")
+                print(f"✅ Account '{args.name}' has been created")
+                print(f"   Data directory: {msg}")
                 if args.login:
                     ok2, msg2 = launch_chrome_for_login(args.name)
                     print(msg2)
@@ -180,12 +180,12 @@ def main():
         elif args.account_action == 'list':
             accounts = list_accounts()
             if not accounts:
-                print("暂无账号，用 `social-upload account add <名称>` 创建")
+                print("There are no accounts yet. Create one with `social-upload account add <name>`.")
             else:
                 for acc in accounts:
-                    marker = " ← 当前" if acc["is_last_used"] else ""
+                    marker = " ← current" if acc["is_last_used"] else ""
                     print(f"  {'●' if acc['is_last_used'] else '○'} {acc['name']}{marker}")
-                    print(f"    创建时间: {acc['created_at']}")
+                    print(f"    Creation time: {acc['created_at']}")
             sys.exit(0)
         elif args.account_action == 'login':
             ok, msg = launch_chrome_for_account(args.name)
@@ -256,16 +256,16 @@ def main():
         killed, msg = kill_browser(port=args.port)
         print(msg)
         if killed:
-            print(f"\n✅ Chrome 已关闭。请重新启动调试浏览器：")
+            print(f"\n✅ Chrome is closed. Please restart the debugging browser:")
             if sys.platform == 'darwin':
                 print(f"   bash scripts/start_chrome_debug.sh")
             elif sys.platform == 'win32':
                 print(f"   scripts\\start_chrome_debug.bat")
             else:
                 print(f"   google-chrome --remote-debugging-port={args.port}")
-            print(f"\n   启动后在调试浏览器中登录目标平台账号，然后重新执行上传命令。")
+            print(f"\n After startup, log in to the target platform account in the debugging browser, and then re-execute the upload command.")
         else:
-            print(f"\n💡 如果浏览器仍在运行，请手动关闭所有 Chrome 窗口后重新启动。")
+            print(f"\n💡 If the browser is still running, please manually close all Chrome windows and restart it.")
         sys.exit(0)
 
     elif args.platform == 'show-recipe':
@@ -285,10 +285,10 @@ def main():
 
 
 def _verify_login_before_collect(platforms: dict) -> dict[str, bool]:
-    """在采集前逐平台验证登录态，返回各平台登录状态。
+    """Verify the login status on a platform-by-platform basis before collection, and return the login status of each platform.
 
-    未登录的平台会打印醒目提示并从采集列表中排除。
-    如果全部平台都未登录，直接退出并要求用户先登录。
+    Platforms that are not logged in will print an eye-catching reminder and be excluded from the collection list.
+    If all platforms are not logged in, log out directly and ask the user to log in first.
     """
     import shutil
     import subprocess as _sp
@@ -300,10 +300,10 @@ def _verify_login_before_collect(platforms: dict) -> dict[str, bool]:
                 opencli = candidate
                 break
     if not opencli:
-        print("❌ 未找到 opencli，跳过登录验证")
+        print("❌ opencli not found, login verification skipped")
         return {p: True for p in platforms}
 
-    print("🔍 正在验证各平台登录状态...")
+    print("🔍 Verifying the login status of each platform...")
     login_status = {}
     for platform in platforms:
         if not platforms[platform]:
@@ -316,13 +316,13 @@ def _verify_login_before_collect(platforms: dict) -> dict[str, bool]:
                 has_yt = any("youtube.com" in t.get("url", "") for t in tabs)
                 login_status[platform] = has_yt
                 if has_yt:
-                    print(f"  ✅ {platform}: 检测到 YouTube 标签页")
+                    print(f"  ✅ {platform}: YouTube tab detected")
                 else:
-                    print(f"  ⚠️ {platform}: 未检测到 YouTube 标签页，采集时将自动导航")
+                    print(f"  ⚠️ {platform}: YouTube tab not detected, will automatically navigate when collecting")
                     login_status[platform] = True
             except Exception:
                 login_status[platform] = True
-                print(f"  ⚠️ {platform}: 无法检测浏览器状态，跳过预检")
+                print(f"  ⚠️ {platform}: Unable to detect browser status, skip preflight")
             continue
         cmd_map = {
             "tiktok": [opencli, "tiktok", "creator-stats", "-f", "json"],
@@ -337,21 +337,21 @@ def _verify_login_before_collect(platforms: dict) -> dict[str, bool]:
             output = (result.stdout + result.stderr).lower()
             if result.returncode == 0 and "not logged in" not in output and "missing" not in output:
                 login_status[platform] = True
-                print(f"  ✅ {platform}: 已登录")
+                print(f"  ✅ {platform}: logged in")
             else:
                 login_status[platform] = False
-                print(f"  ❌ {platform}: 未登录")
+                print(f"  ❌ {platform}: Not logged in")
         except Exception:
             login_status[platform] = True
-            print(f"  ⚠️ {platform}: 验证超时，跳过")
+            print(f"  ⚠️ {platform}: Verification timeout, skip")
 
     logged_in = [p for p, ok in login_status.items() if ok]
     not_logged_in = [p for p, ok in login_status.items() if not ok]
 
     if not logged_in and not_logged_in:
         print("\n" + "=" * 50)
-        print("⛔ 所有平台均未登录，无法采集数据。")
-        print("请先在调试浏览器中登录各平台账号：")
+        print("⛔ All platforms are not logged in and data cannot be collected.")
+        print("Please log in to each platform account in the debugging browser first:")
         print("  1. YouTube Studio → studio.youtube.com")
         print("  2. TikTok Studio → tiktok.com/tiktokstudio")
         print("  3. Instagram → instagram.com")
@@ -359,21 +359,21 @@ def _verify_login_before_collect(platforms: dict) -> dict[str, bool]:
         sys.exit(1)
 
     if not_logged_in:
-        print(f"\n⚠️ 以下平台未登录，将跳过采集: {', '.join(not_logged_in)}")
-        print(f"   继续采集已登录的平台: {', '.join(logged_in)}\n")
+        print(f"\n⚠️ If you are not logged in to the following platforms, collection will be skipped: {', '.join(not_logged_in)}")
+        print(f"   Continue collecting logged-in platforms: {', '.join(logged_in)}\n")
 
     return login_status
 
 
 def _format_identity(platform: str, identity: dict) -> str:
-    """从 account_identity 中提取可读的账号标识。"""
+    """Extract the human-readable account ID from account_identity."""
     username = identity.get("username", "")
     if username:
         prefix = "@" if not username.startswith("@") else ""
-        return f"用户: {prefix}{username}"
+        return f"User: {prefix}{username}"
     channel_hint = identity.get("channel_hint", "")
     if channel_hint and platform == "youtube":
-        return f"频道首视频: {channel_hint[:30]}"
+        return f"Channel first video: {channel_hint[:30]}"
     return ""
 
 
@@ -387,17 +387,17 @@ _PLATFORM_ALIAS = {
     "instagram": "instagram",
     "dy": "douyin",
     "douyin": "douyin",
-    "抖音": "douyin",
+    "Tik Tok": "douyin",
 }
 
 
 def _parse_platforms_filter(raw: str | None) -> list[str] | None:
-    """把 --platforms 的字符串解析为规范化的平台列表。
+    """Parse the --platforms string into a normalized list of platforms.
 
-    返回值语义:
-      - None             ：用户没传 --platforms，沿用账号所有已配置平台
-      - []               ：用户传了但全是无法识别的别名（调用方应直接退出）
-      - ["xxx", ...]     ：用户传了并解析出至少一个合法平台
+    Return value semantics:
+      - None: The user has not passed --platforms, and all configured platforms of the account will be used.
+      - []: The user passed in all unrecognizable aliases (the caller should exit directly)
+      - ["xxx", ...]: The user passed and parsed out at least one legal platform
     """
     if raw is None:
         return None
@@ -411,7 +411,7 @@ def _parse_platforms_filter(raw: str | None) -> list[str] | None:
             continue
         norm = _PLATFORM_ALIAS.get(key)
         if not norm:
-            print(f"⚠️ 忽略未知平台: {token.strip()}（支持: youtube/tiktok/instagram/douyin）")
+            print(f"⚠️ Ignore unknown platform: {token.strip()} (support: youtube/tiktok/instagram/douyin)")
             continue
         if norm not in cleaned:
             cleaned.append(norm)
@@ -419,11 +419,11 @@ def _parse_platforms_filter(raw: str | None) -> list[str] | None:
 
 
 def _apply_platforms_filter(platforms: dict, only: list[str] | None) -> dict:
-    """根据 --platforms 过滤 account_platforms 字典。
+    """Filter the account_platforms dictionary based on --platforms.
 
-    only 为 None 时原样返回；否则只保留交集，并对未配置但被显式要求的平台
-    临时补一个 True，让后续 collector 仍能尝试采集（适合用户登录了但还
-    没跑过 monitor config 的场景）。
+    Returns unchanged when only is None; otherwise only retains the intersection and returns the result for unconfigured but explicitly requested platforms
+    Temporarily add a True so that subsequent collectors can still try to collect (suitable for users who are logged in but are still
+    I have never run the monitor config scenario).
     """
     if not only:
         return platforms
@@ -434,16 +434,16 @@ def _apply_platforms_filter(platforms: dict, only: list[str] | None) -> dict:
             if val:
                 result[p] = val
             else:
-                print(f"⚠️ 平台 '{p}' 在账号配置中已关闭，--platforms 将临时启用本次采集")
+                print(f"⚠️ Platform '{p}' has been closed in the account configuration, --platforms will temporarily enable this collection")
                 result[p] = True
         else:
-            print(f"ℹ️ 平台 '{p}' 未在账号配置中，--platforms 将临时启用本次采集")
+            print(f"ℹ️ Platform '{p}' is not in the account configuration, --platforms will temporarily enable this collection")
             result[p] = True
     return result
 
 
 def _handle_monitor(args):
-    """处理 monitor 子命令。"""
+    """Handles the monitor subcommand."""
     action = args.monitor_action
 
     _PLATFORM_ARGS = ['youtube', 'tiktok', 'instagram', 'douyin']
@@ -462,20 +462,20 @@ def _handle_monitor(args):
 
         if not has_update:
             if current:
-                print(f"📋 账号 '{args.account}' 的平台映射:")
+                print(f"📋 Platform mapping for account '{args.account}':")
                 for k, v in current.items():
-                    display = '已启用' if v else '(未配置)'
+                    display = 'Enabled' if v else '(not configured)'
                     print(f"   {k}: {display}")
             else:
-                print(f"⚠️ 账号 '{args.account}' 尚未配置平台映射")
-                print(f"\n用法示例:")
+                print(f"⚠️Account '{args.account}' has not configured platform mapping")
+                print(f"\nUsage example:")
                 print(f"  social-upload monitor config --youtube true --tiktok true --instagram true")
             return
 
         set_account_platforms(args.account, updated)
-        print(f"✅ 账号 '{args.account}' 的平台映射已更新:")
+        print(f"✅ The platform mapping of account '{args.account}' has been updated:")
         for k, v in updated.items():
-            display = v if isinstance(v, str) and v else ('已启用' if v else '(未配置)')
+            display = v if isinstance(v, str) and v else ('Enabled' if v else '(not configured)')
             print(f"   {k}: {display}")
 
     elif action == 'collect':
@@ -488,25 +488,25 @@ def _handle_monitor(args):
         platforms = get_account_platforms(args.account)
         only = _parse_platforms_filter(getattr(args, 'platforms', None))
         if only == []:
-            print("❌ --platforms 参数中没有任何可识别的平台，已退出")
+            print("❌ No recognized platforms in the --platforms parameter, exited")
             sys.exit(1)
         if not platforms and not only:
-            print(f"❌ 账号 '{args.account}' 未配置平台映射，请先运行:")
+            print(f"❌ The account '{args.account}' has not been configured with platform mapping, please run:")
             print(f"   social-upload monitor config --youtube true --tiktok true --instagram true")
             sys.exit(1)
 
         platforms = _apply_platforms_filter(platforms or {}, only)
         if not platforms:
-            print("❌ 经过 --platforms 过滤后没有可采集的平台，已退出")
+            print("❌ After filtering by --platforms, there are no platforms that can be collected, so we have exited.")
             sys.exit(1)
 
         if only:
-            print(f"🎯 仅采集指定平台: {', '.join(platforms.keys())}")
+            print(f"🎯 Only collect designated platforms: {', '.join(platforms.keys())}")
 
         login_status = _verify_login_before_collect(platforms)
         verified_platforms = {p: v for p, v in platforms.items() if login_status.get(p, True)}
 
-        print(f"\n🔄 开始采集数据（账号: {args.account}，通过 OpenCLI）...")
+        print(f"\n🔄 Start collecting data (Account: {args.account}, via OpenCLI)...")
         results = run_collect(verified_platforms)
 
         success_count = 0
@@ -526,9 +526,9 @@ def _handle_monitor(args):
                 identity = data.get("account_identity", {})
                 identity_label = _format_identity(platform, identity)
                 if identity_label:
-                    print(f"  ✅ {platform}: {metric_count} 项指标, {video_count} 条视频数据 ({identity_label})")
+                    print(f"  ✅ {platform}: {metric_count} indicators, {video_count} video data ({identity_label})")
                 else:
-                    print(f"  ✅ {platform}: {metric_count} 项指标, {video_count} 条视频数据")
+                    print(f"  ✅ {platform}: {metric_count} indicators, {video_count} video data")
                 success_count += 1
 
                 top_metrics = data.get("account_metrics", {})
@@ -542,22 +542,22 @@ def _handle_monitor(args):
                     if summary_parts:
                         print(f"     📈 {', '.join(summary_parts[:5])}")
 
-        print(f"\n🎉 数据采集完成（{success_count}/{len(results)} 个平台成功）")
+        print(f"\n🎉 Data collection completed ({success_count}/{len(results)} platforms successful)")
 
         collected_identities = []
         for platform, data in results.items():
             if not data.get("error"):
                 identity = data.get("account_identity", {})
                 label = _format_identity(platform, identity)
-                collected_identities.append((platform, label or "（未检测到账号名）"))
+                collected_identities.append((platform, label or "(Account name not detected)"))
         if collected_identities:
             print("\n" + "=" * 50)
-            print("⚠️  请确认以下采集的账号是否正确：")
+            print("⚠️ Please confirm whether the account collected below is correct:")
             print("-" * 50)
             for plat, label in collected_identities:
                 print(f"  {plat}: {label}")
             print("=" * 50)
-            print("如果账号不正确，请在浏览器中切换账号后重新采集。\n")
+            print("If the account is incorrect, please switch accounts in the browser and collect again. \n")
 
         if not getattr(args, 'no_report', False) and success_count > 0:
             from social_uploader.analytics.analyzer import analyze
@@ -577,16 +577,16 @@ def _handle_monitor(args):
             if current_snapshots:
                 fmt = getattr(args, 'format', 'terminal')
                 period = getattr(args, 'period', 28)
-                print(f"\n📊 正在分析数据（周期: {period} 天）...")
+                print(f"\n📊 Analyzing data (Period: {period} days)...")
                 analysis = analyze(current_snapshots, previous_snapshots, period_days=period, account=args.account)
 
-                print("📝 正在基于规则生成创作建议...")
+                print("📝 Generating creative suggestions based on rules...")
                 advice = generate_advice(analysis)
 
                 content, saved_path = generate_report(analysis, advice, fmt=fmt, account=args.account)
                 print(content)
                 if saved_path:
-                    print(f"\n📄 报告文件: {saved_path}")
+                    print(f"\n📄 Report file: {saved_path}")
 
     elif action == 'report':
         from social_uploader.analytics.store import (
@@ -599,12 +599,12 @@ def _handle_monitor(args):
         platforms = get_account_platforms(args.account)
         only = _parse_platforms_filter(getattr(args, 'platforms', None))
         if only == []:
-            print("❌ --platforms 参数中没有任何可识别的平台，已退出")
+            print("❌ No recognized platforms in the --platforms parameter, exited")
             sys.exit(1)
         all_platform_keys = list(platforms.keys()) if platforms else _PLATFORM_ARGS
         if only:
             all_platform_keys = [p for p in only if p in all_platform_keys] or list(only)
-            print(f"🎯 仅基于以下平台生成报告: {', '.join(all_platform_keys)}")
+            print(f"🎯 Generate reports only based on the following platforms: {', '.join(all_platform_keys)}")
 
         current_snapshots = {}
         previous_snapshots = {}
@@ -617,14 +617,14 @@ def _handle_monitor(args):
                     previous_snapshots[platform] = prev
 
         if not current_snapshots:
-            print("❌ 没有找到采集数据，请先运行:")
+            print("❌ No collected data found, please run:")
             print("   social-upload monitor collect")
             sys.exit(1)
 
-        print(f"📊 正在分析数据（周期: {args.period} 天）...")
+        print(f"📊 Analyzing data (Period: {args.period} days)...")
         analysis = analyze(current_snapshots, previous_snapshots, period_days=args.period, account=args.account)
 
-        print("📝 正在基于规则生成创作建议...")
+        print("📝 Generating creative suggestions based on rules...")
         advice = generate_advice(analysis)
 
         fmt = getattr(args, 'format', 'md')
@@ -633,7 +633,7 @@ def _handle_monitor(args):
 
         print(content)
         if saved_path:
-            print(f"\n📄 报告文件: {saved_path}")
+            print(f"\n📄 Report file: {saved_path}")
 
     elif action == 'run':
         from social_uploader.analytics.store import (
@@ -648,25 +648,25 @@ def _handle_monitor(args):
         platforms = get_account_platforms(args.account)
         only = _parse_platforms_filter(getattr(args, 'platforms', None))
         if only == []:
-            print("❌ --platforms 参数中没有任何可识别的平台，已退出")
+            print("❌ No recognized platforms in the --platforms parameter, exited")
             sys.exit(1)
         if not platforms and not only:
-            print(f"❌ 账号 '{args.account}' 未配置平台映射，请先运行:")
+            print(f"❌ The account '{args.account}' has not been configured with platform mapping, please run:")
             print(f"   social-upload monitor config --youtube true --tiktok true --instagram true")
             sys.exit(1)
 
         platforms = _apply_platforms_filter(platforms or {}, only)
         if not platforms:
-            print("❌ 经过 --platforms 过滤后没有可采集的平台，已退出")
+            print("❌ After filtering by --platforms, there are no platforms that can be collected, so we have exited.")
             sys.exit(1)
 
         if only:
-            print(f"🎯 仅采集指定平台: {', '.join(platforms.keys())}")
+            print(f"🎯 Only collect designated platforms: {', '.join(platforms.keys())}")
 
         login_status = _verify_login_before_collect(platforms)
         verified_platforms = {p: v for p, v in platforms.items() if login_status.get(p, True)}
 
-        print(f"\n🔄 开始采集数据（账号: {args.account}，通过 OpenCLI）...")
+        print(f"\n🔄 Start collecting data (Account: {args.account}, via OpenCLI)...")
         results = run_collect(verified_platforms)
 
         for platform, data in results.items():
@@ -683,7 +683,7 @@ def _handle_monitor(args):
                 identity = data.get("account_identity", {})
                 identity_label = _format_identity(platform, identity)
                 suffix = f" ({identity_label})" if identity_label else ""
-                print(f"  ✅ {platform}: 采集完成{suffix}")
+                print(f"  ✅ {platform}: Collection completed {suffix}")
 
         all_platform_keys = list(verified_platforms.keys())
         current_snapshots = {}
@@ -697,13 +697,13 @@ def _handle_monitor(args):
                     previous_snapshots[platform] = prev
 
         if not current_snapshots:
-            print("❌ 所有平台采集失败，无法生成报告")
+            print("❌ Collection failed on all platforms and reports cannot be generated")
             sys.exit(1)
 
-        print(f"\n📊 正在分析数据（周期: {args.period} 天）...")
+        print(f"\n📊 Analyzing data (Period: {args.period} days)...")
         analysis = analyze(current_snapshots, previous_snapshots, period_days=args.period, account=args.account)
 
-        print("📝 正在基于规则生成创作建议...")
+        print("📝 Generating creative suggestions based on rules...")
         advice = generate_advice(analysis)
 
         fmt = getattr(args, 'format', 'md')
@@ -712,8 +712,8 @@ def _handle_monitor(args):
 
         print(content)
         if saved_path:
-            print(f"\n📄 报告文件: {saved_path}")
-        print("\n🎉 采集 + 报告一键完成")
+            print(f"\n📄 Report file: {saved_path}")
+        print("\n🎉 Collection + reporting completed with one click")
 
 
 if __name__ == '__main__':

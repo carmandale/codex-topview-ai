@@ -14,7 +14,7 @@
 Supported task types:
     text2image   Text-to-Image  — generate images from a text prompt
     image_edit   Image Edit     — edit images with prompt + reference images
-    storyboard   Storyboard     — generate a grid storyboard preview for short drama beats
+    storyboard   Storyboard     - generate a grid storyboard preview for short-form video planning
 
 Subcommands:
     run           Submit task AND poll until done — DEFAULT, use this first
@@ -59,11 +59,11 @@ ENDPOINTS = {
 
 DEFAULT_TIMEOUT = 300
 DEFAULT_INTERVAL = 3
+
 STORYBOARD_BACKEND_TYPE = "storyboardToVideo"
 STORYBOARD_MODEL = "GPT Image 2"
 STORYBOARD_ASPECT_RATIO = "16:9"
 STORYBOARD_RESOLUTION = "2K"
-
 # ---------------------------------------------------------------------------
 # Model constraints
 # Each entry: { "aspectRatio": list, "resolution": list|None, "maxImages": int }
@@ -71,34 +71,39 @@ STORYBOARD_RESOLUTION = "2K"
 #   resolution=[...] means the parameter is required.
 # ---------------------------------------------------------------------------
 
-GPT_IMAGE_2_ASPECT_RATIOS = ["9:16", "3:4", "1:1", "4:3", "16:9", "2:3", "3:2", "5:4", "4:5", "21:9", "9:21", "1:2", "2:1"]
-
 TEXT2IMAGE_MODELS = {
-    "Nano Banana 2":   {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "2:3", "3:2", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"], "resolution": ["512p", "1K", "2K", "4K"]},
-    "Nano Banana Pro":  {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],                                                                  "resolution": ["1K", "2K", "4K"]},
+    "Nano Banana 2":      {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "2:3", "3:2", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"], "resolution": ["512p", "1K", "2K", "4K"]},
+    "Nano Banana 2 Lite": {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "2:3", "3:2", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"], "resolution": ["1K"]},
+    "Nano Banana Pro":  {"aspectRatio": ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],                               "resolution": ["1K", "2K", "4K"]},
     "Nano Banana":      {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],                                                                  "resolution": None},
+    "Seedream 5.0 Pro": {"aspectRatio": ["auto", "9:16", "3:4", "2:3", "1:1", "3:2", "4:3", "16:9", "21:9"],                                    "resolution": ["1K", "2K"]},
+    "Seedream 5.0 Lite":{"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "21:9"],                                                  "resolution": ["2K"]},
     "Seedream 5.0":     {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "21:9"],                                                  "resolution": ["2K"]},
     "Seedream 4.5":     {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "21:9"],                                                  "resolution": ["2K", "4K"]},
     "Seedream 4.0":     {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "21:9"],                                                  "resolution": ["1K", "2K", "4K"]},
-    "Grok Image Pro":   {"aspectRatio": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "20:9", "9:20", "19.5:9", "9:19.5"],  "resolution": ["1K", "2K"]},
+    "Grok Image Quality": {"aspectRatio": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "20:9", "9:20", "19.5:9", "9:19.5"], "resolution": ["1K", "2K"]},
     "Grok Image":       {"aspectRatio": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "20:9", "9:20", "19.5:9", "9:19.5"],  "resolution": ["1K", "2K"]},
-    "GPT Image 1.5":    {"aspectRatio": ["3:2", "1:1", "2:3"],                                                                                  "resolution": None},
-    "GPT Image 2":      {"aspectRatio": GPT_IMAGE_2_ASPECT_RATIOS,                                                                              "resolution": ["1K", "2K", "4K"]},
+    "Kling V3 Omni":    {"aspectRatio": ["9:16", "3:4", "2:3", "1:1", "3:2", "4:3", "16:9", "21:9"],                                            "resolution": ["1K", "2K", "4K"]},
+    "GPT Image 2":      {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "2:3", "3:2", "5:4", "4:5", "21:9", "9:21", "1:2", "2:1"],        "resolution": ["1K", "2K", "4K"], "quality": ["low", "medium", "high"]},
     "Kontext-Pro":      {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],                                                                  "resolution": None},
     "Imagen 4":         {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9"],                                                                  "resolution": None},
 }
 
 IMAGE_EDIT_MODELS = {
-    "Nano Banana 2":   {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "2:3", "3:2", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"], "resolution": ["512p", "1K", "2K", "4K"], "maxImages": 14},
-    "Nano Banana Pro":  {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9"],                                                                  "resolution": ["1K", "2K", "4K"],       "maxImages": 6},
+    "Nano Banana 2":      {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "2:3", "3:2", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"], "resolution": ["512p", "1K", "2K", "4K"], "maxImages": 14},
+    "Nano Banana 2 Lite": {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "2:3", "3:2", "5:4", "4:5", "21:9", "4:1", "1:4", "8:1", "1:8"], "resolution": ["1K"],                     "maxImages": 14},
+    "Nano Banana Pro":  {"aspectRatio": ["auto", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],                               "resolution": ["1K", "2K", "4K"],       "maxImages": 6},
     "Nano Banana":      {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9"],                                                                  "resolution": None,                     "maxImages": 6},
+    "Seedream 5.0 Pro": {"aspectRatio": ["auto", "9:16", "3:4", "2:3", "1:1", "3:2", "4:3", "16:9", "21:9"],                                            "resolution": ["1K", "2K"],             "maxImages": 14},
+    "Seedream 5.0 Lite":{"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "21:9"],                                                          "resolution": ["2K"],                   "maxImages": 14},
     "Seedream 5.0":     {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "21:9"],                                                          "resolution": ["2K"],                   "maxImages": 14},
     "Seedream 4.5":     {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "21:9"],                                                          "resolution": ["2K", "4K"],             "maxImages": 14},
     "Seedream 4.0":     {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9", "21:9"],                                                          "resolution": ["1K", "2K", "4K"],       "maxImages": 5},
-    "Grok Image Pro":   {"aspectRatio": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "20:9", "9:20", "19.5:9", "9:19.5"],          "resolution": ["1K", "2K"],             "maxImages": 1},
+    "Grok Image Quality": {"aspectRatio": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "20:9", "9:20", "19.5:9", "9:19.5"],        "resolution": ["1K", "2K"],             "maxImages": 3},
     "Grok Image":       {"aspectRatio": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "2:1", "1:2", "20:9", "9:20", "19.5:9", "9:19.5"],          "resolution": ["1K", "2K"],             "maxImages": 1},
-    "GPT Image 1.5":    {"aspectRatio": ["3:2", "1:1", "2:3"],                                                                                          "resolution": None,                     "maxImages": 8},
-    "GPT Image 2":      {"aspectRatio": GPT_IMAGE_2_ASPECT_RATIOS,                                                                                      "resolution": ["1K", "2K", "4K"],       "maxImages": 16},
+    "Kling V3 Omni":    {"aspectRatio": ["9:16", "3:4", "2:3", "1:1", "3:2", "4:3", "16:9", "21:9"],                                                    "resolution": ["1K", "2K", "4K"],       "maxImages": 10},
+    "GPT Image 2":      {"aspectRatio": ["9:16", "3:4", "1:1", "4:3", "16:9", "2:3", "3:2", "5:4", "4:5", "21:9", "9:21", "1:2", "2:1"],                "resolution": ["1K", "2K", "4K"],       "maxImages": 16, "quality": ["low", "medium", "high"]},
+    "Reve Image Remix": {"aspectRatio": ["auto", "9:16", "3:4", "2:3", "1:1", "3:2", "4:3", "16:9"],                                                    "resolution": ["1K", "2K", "4K"],       "maxImages": 6,  "quality": ["low", "medium", "high"]},
     "Kontext-Pro":      {"aspectRatio": ["auto", "9:16", "3:4", "1:1", "4:3", "16:9"],                                                                  "resolution": None,                     "maxImages": 1},
 }
 
@@ -112,30 +117,37 @@ MODEL_REGISTRY = {"text2image": TEXT2IMAGE_MODELS, "image_edit": IMAGE_EDIT_MODE
 
 _PRICING = {
     "text2image": {
-        "Nano Banana 2":   {"512p": 0.25, "1K": 0.40, "2K": 0.60, "4K": 0.85},
+        "Nano Banana 2":      {"512p": 0.25, "1K": 0.40, "2K": 0.60, "4K": 0.85},
+        "Nano Banana 2 Lite": {"1K": 0.30},
         "Nano Banana Pro":  {"1K": 0.80, "2K": 0.80, "4K": 1.40},
         "Nano Banana":      {"default": 0.30},
+        "Seedream 5.0 Pro": {"1K": 0.40, "2K": 0.80},
+        "Seedream 5.0 Lite":{"2K": 0.20},
         "Seedream 5.0":     {"2K": 0.20},
         "Seedream 4.5":     {"2K": 0.20, "4K": 0.20},
         "Seedream 4.0":     {"1K": 0.15, "2K": 0.15, "4K": 0.15},
-        "Grok Image Pro":   {"1K": 0.45, "2K": 0.45},
-        "Grok Image":       {"1K": 0.15, "2K": 0.15},
-        "GPT Image 1.5":    {"default": 2.00},
+        "Grok Image Quality": {"1K": 0.60, "2K": 1.00},
+        "Grok Image":       {"1K": 0.30, "2K": 0.30},
+        "Kling V3 Omni":    {"1K": 0.30, "2K": 0.30, "4K": 0.60},
         "GPT Image 2":      {"1K": 0.20, "2K": 0.80, "4K": 1.40},
         "Kontext-Pro":      {"default": 0.50},
         "Imagen 4":         {"default": 0.50},
     },
     "image_edit": {
-        "Nano Banana 2":   {"512p": 0.25, "1K": 0.40, "2K": 0.60, "4K": 0.85},
+        "Nano Banana 2":      {"512p": 0.25, "1K": 0.40, "2K": 0.60, "4K": 0.85},
+        "Nano Banana 2 Lite": {"1K": 0.30},
         "Nano Banana Pro":  {"1K": 0.80, "2K": 0.80, "4K": 1.40},
         "Nano Banana":      {"default": 0.30},
+        "Seedream 5.0 Pro": {"1K": 0.40, "2K": 0.80},
+        "Seedream 5.0 Lite":{"2K": 0.20},
         "Seedream 5.0":     {"2K": 0.20},
         "Seedream 4.5":     {"2K": 0.20, "4K": 0.20},
         "Seedream 4.0":     {"1K": 0.15, "2K": 0.15, "4K": 0.15},
-        "Grok Image Pro":   {"1K": 0.45, "2K": 0.45},
-        "Grok Image":       {"1K": 0.15, "2K": 0.15},
-        "GPT Image 1.5":    {"default": 2.00},
+        "Grok Image Quality": {"1K": 0.60, "2K": 1.00},
+        "Grok Image":       {"1K": 0.30, "2K": 0.30},
+        "Kling V3 Omni":    {"1K": 0.30, "2K": 0.30, "4K": 0.60},
         "GPT Image 2":      {"1K": 0.20, "2K": 0.80, "4K": 1.40},
+        "Reve Image Remix": {"1K": 1.60, "2K": 1.80, "4K": 2.00},
         "Kontext-Pro":      {"default": 0.50},
     },
 }
@@ -144,7 +156,6 @@ _PRICING = {
 def estimate_cost(task_type: str, model: str, resolution: str | None,
                   count: int = 1) -> float | None:
     """Return estimated total cost in credits, or None if model/params unknown."""
-    model = normalize_model_name(model)
     prices = _PRICING.get(task_type, {}).get(model)
     if not prices:
         return None
@@ -155,13 +166,9 @@ def estimate_cost(task_type: str, model: str, resolution: str | None,
     return None
 
 
-def normalize_model_name(model: str) -> str:
-    """Return the TopView model display name."""
-    return model
-
-
 def validate_model_params(task_type: str, model: str, aspect_ratio: str | None,
-                          resolution: str | None, quiet: bool) -> None:
+                          resolution: str | None, quality: str | None,
+                          quiet: bool) -> None:
     """Warn on stderr if parameters are incompatible with model constraints."""
     registry = MODEL_REGISTRY.get(task_type, {})
     if model not in registry:
@@ -175,6 +182,22 @@ def validate_model_params(task_type: str, model: str, aspect_ratio: str | None,
         return
 
     spec = registry[model]
+
+    supported_quality = spec.get("quality")
+    if quality and not supported_quality:
+        if not quiet:
+            print(
+                f"Warning: model '{model}' does not support quality "
+                f"(got '{quality}'). Do NOT send this parameter.",
+                file=sys.stderr,
+            )
+    elif quality and supported_quality and quality not in supported_quality:
+        if not quiet:
+            print(
+                f"Warning: model '{model}' supports quality "
+                f"{supported_quality}, got '{quality}'.",
+                file=sys.stderr,
+            )
 
     if aspect_ratio and aspect_ratio not in spec["aspectRatio"]:
         if not quiet:
@@ -217,24 +240,24 @@ def resolve_file(client: TopviewClient, file_ref: str, quiet: bool) -> str:
 
 
 def build_text2image_body(args) -> dict:
-    model = normalize_model_name(args.model)
     body = {
-        "model": model,
+        "model": args.model,
         "prompt": args.prompt,
         "aspectRatio": args.aspect_ratio,
         "generateCount": args.count,
     }
     if args.resolution:
         body["resolution"] = args.resolution
+    if getattr(args, "quality", None):
+        body["quality"] = args.quality
     if args.board_id:
         body["boardId"] = args.board_id
     return body
 
 
 def build_image_edit_body(args, client: TopviewClient) -> dict:
-    model = normalize_model_name(args.model)
     body = {
-        "model": model,
+        "model": args.model,
         "prompt": args.prompt,
         "aspectRatio": args.aspect_ratio,
         "generateCount": args.count,
@@ -245,60 +268,48 @@ def build_image_edit_body(args, client: TopviewClient) -> dict:
         ]
     if args.resolution:
         body["resolution"] = args.resolution
+    if getattr(args, "quality", None):
+        body["quality"] = args.quality
     if args.board_id:
         body["boardId"] = args.board_id
     return body
 
 
 def format_storyboard_prompt(args) -> str:
-    """Build the fixed storyboard prompt from user-provided story inputs."""
-    shot_count_constraint = (
-        f"fixed count: exactly {args.shot_count} storyboard cells"
+    """Build a constrained grid-storyboard prompt from the approved story beat."""
+    shot_count = (
+        f"exactly {args.shot_count} cells"
         if args.shot_count
-        else "automatic: decide how many storyboard cells are needed to tell the story clearly based on the plot below (usually 4-9 cells, up to 16 for complex plots), then arrange them accordingly"
+        else "an automatic count, usually 4-9 cells and at most 16"
     )
-    duration_rule = ""
-    if args.target_duration_seconds:
-        duration_rule = (
-            f"- The current beat has a target total duration of {args.target_duration_seconds}s. "
-            f"The sum of all individual shot durations must equal {args.target_duration_seconds}s, with an allowed rounding tolerance of +/-1s.\n"
-        )
+    duration_rule = (
+        f"The total of all shot durations must equal {args.target_duration_seconds}s (+/-1s)."
+        if args.target_duration_seconds
+        else "Choose an appropriate duration for each shot, normally 1-15 seconds."
+    )
+    return f"""Create one landscape 16:9 grid storyboard preview for short-form video planning.
 
-    return f"""Please generate one [grid storyboard preview image] for shot breakdown preview in short-drama creation.
+Hard constraints:
+- Every internal storyboard cell must use a strict {args.cell_aspect_ratio} aspect ratio.
+- Use {shot_count}, ordered chronologically from top-left to bottom-right.
+- Leave blank or black margins when needed; never stretch cells to fill the canvas.
+- Put only a small sequence number in the top-left of each cell.
+- Do not add captions, dialogue, descriptions, titles, watermarks, UI labels, or bottom bars.
+- Show exactly one key frame per cell with clear shot-to-shot progression.
+- Keep people, products, wardrobe, lighting, location, and color grading consistent.
+- Reference images correspond in order to @Image 1, @Image 2, and later tags in the story.
+- {duration_rule}
 
-[Overall Format]
-- The entire storyboard preview image itself must be generated as a 16:9 landscape image (width:height = 16:9), so it is easy to read horizontally.
-- LOCKED: the internal image ratio of every storyboard cell must be strictly {args.cell_aspect_ratio} (width:height), matching the final aspect ratio of this short-drama project. This is a non-negotiable hard constraint. Do not let any cell degrade into another ratio just because the whole canvas is 16:9 landscape.
-- The full image should be arranged as a grid, with this storyboard count constraint: {shot_count_constraint}. You may decide the exact number of columns and rows, reading order, and visual distribution of cells yourself, as long as the overall reading rhythm is smooth and the composition looks balanced.
-- The full image is allowed to contain large empty areas / black background. It is better to leave generous blank margins between cells or around the grid, and let the 16:9 canvas remain far from fully filled, than to stretch cells, squash images, or break the required cell ratio in order to fill the canvas.
-- Arrange storyboard cells in chronological order, with a clear reading path, usually row first, column second, from top-left to bottom-right.
-- Separate cells with thin black lines, and keep a narrow outer margin around the whole grid.
-- Each cell must show only the [key frame] of that shot, meaning the single frame that best represents the information of the shot. Do not put multiple frames, collages, before/after sequences, or process images inside one cell.
-- Each cell must include only a small sequence number in the top-left corner, starting from 1 and increasing in chronological order. Use a small black square or semi-transparent black label with clean white digits, similar to a storyboard contact sheet.
-- Do not add any other visible text. No subtitles, no captions, no shot descriptions, no dialogue text, no title, no watermark, no UI labels, and no bottom text bars.
-
-[Storyboard Duration Design]
-{duration_rule}- If the plot explicitly gives shot durations, follow those durations strictly.
-- If no duration is specified, design each individual shot duration according to the best way to present the story. A reasonable single-shot duration range is 1s-15s.
-
-[Visual Consistency Requirements]
-- Show continuous action in the same scene with the same group of characters. Keep character appearance, clothing, hairstyle, lighting, and color tone consistent.
-- Adjacent cells should show clear time progression or camera-position changes. Avoid overly similar images.
-- Use an overall realistic cinematic look with unified color grading.
-
-[Reference Materials]
-You will see several reference images named Image 1, Image 2, and so on. They correspond one-to-one, in order, with the "@Image N" tags that appear in the plot below. Use these reference images as strong references for visuals, character appearance, scene, composition, and style. Maintain consistency in face, clothing, and scene.
-
-[Plot to Represent]
+Story to represent:
 {args.prompt}"""
 
 
 def build_storyboard_body(args, client: TopviewClient) -> dict:
-    final_prompt = format_storyboard_prompt(args)
+    """Build the fixed-backend storyboard request body."""
     body = {
         "type": STORYBOARD_BACKEND_TYPE,
         "model": STORYBOARD_MODEL,
-        "prompt": final_prompt,
+        "prompt": format_storyboard_prompt(args),
         "aspectRatio": STORYBOARD_ASPECT_RATIO,
         "resolution": STORYBOARD_RESOLUTION,
         "generateCount": 1,
@@ -317,11 +328,11 @@ def build_body(args, client: TopviewClient) -> dict:
     if args.type == "storyboard":
         return build_storyboard_body(args, client)
 
-    model = normalize_model_name(args.model)
     validate_model_params(
-        args.type, model,
+        args.type, args.model,
         getattr(args, "aspect_ratio", None),
         getattr(args, "resolution", None),
+        getattr(args, "quality", None),
         args.quiet,
     )
     if args.type == "text2image":
@@ -334,11 +345,7 @@ def build_body(args, client: TopviewClient) -> dict:
 def do_submit(client: TopviewClient, task_type: str, body: dict, quiet: bool) -> str:
     """POST submit task, return taskId."""
     path = ENDPOINTS[task_type]["submit"]
-    label = {
-        "text2image": "text-to-image",
-        "image_edit": "image-edit",
-        "storyboard": "storyboard",
-    }
+    label = {"text2image": "text-to-image", "image_edit": "image-edit", "storyboard": "storyboard"}
     if not quiet:
         print(f"Submitting {label[task_type]} task...", file=sys.stderr)
     result = client.post(path, json=body)
@@ -385,7 +392,7 @@ def download_image(url: str, output: str, quiet: bool) -> None:
         print(f"Downloaded: {output} ({size_kb:.1f} KB)", file=sys.stderr)
 
 
-def print_result(result: dict, args) -> None:
+def print_result(result: dict, args, client: TopviewClient) -> None:
     """Print final result: image URLs by default, full JSON with --json."""
     images = result.get("images", [])
 
@@ -399,25 +406,30 @@ def print_result(result: dict, args) -> None:
                 download_image(url, out_path, args.quiet)
 
     if args.json:
-        print(json_mod.dumps(result, indent=2, ensure_ascii=False))
+        print(json_mod.dumps(client.shorten_urls_in_data(result), indent=2, ensure_ascii=False))
     else:
         cost = result.get("costCredit", "N/A")
+        board_id = result.get("boardId", "") or getattr(args, "board_id", "") or ""
         print(f"status: {result.get('status')}  cost: {cost} credits")
+        any_board_task = False
         for i, img in enumerate(images):
-            status = img.get("status", "unknown")
+            status = str(img.get("status", "unknown"))
             url = img.get("filePath", "")
             err = img.get("errorMsg", "")
-            if str(status).lower() == "success":
+            if status.lower() == "success":
                 dims = ""
                 if img.get("width") and img.get("height"):
                     dims = f" ({img['width']}x{img['height']})"
-                print(f"  [{i+1}] {url}{dims}")
+                print(f"  [{i+1}] {client.shorten_url(url)}{dims}")
             else:
                 print(f"  [{i+1}] {status}: {err}")
-    board_task_id = result.get("boardTaskId", "")
-    board_id = result.get("boardId", "") or getattr(args, "board_id", "") or ""
-    if board_task_id and board_id:
-        print(f"  edit: https://www.topview.ai/board/{board_id}?boardResultId={board_task_id}")
+            btid = img.get("boardTaskId")
+            if btid and board_id:
+                any_board_task = True
+                print(f"       edit: https://www.topview.ai/board/{board_id}?boardResultId={btid}")
+        if not any_board_task and board_id:
+            print(f"  [debug] boardTaskId not found, full result:", file=sys.stderr)
+            print(json_mod.dumps(result, indent=2, ensure_ascii=False), file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -431,11 +443,13 @@ def add_common_args(p):
     p.add_argument("--model", default=None,
                    help='Model display name, e.g. "Seedream 5.0", "Kontext-Pro"')
     p.add_argument("--prompt", required=True,
-                   help="Text prompt, edit instruction, or storyboard beat/story")
+                   help="Text prompt, edit instruction, or storyboard beat")
     p.add_argument("--aspect-ratio", default=None,
                    help='Aspect ratio, e.g. "16:9", "1:1", "auto"')
     p.add_argument("--resolution", default=None,
                    help='Resolution: "512p", "1K", "2K", "4K" (model-dependent, some require it, some forbid it)')
+    p.add_argument("--quality", default=None, choices=["low", "medium", "high"],
+                   help='Quality tier: low / medium / high. Only GPT Image 2 and Reve Image models support it (default medium); forbidden for others')
     p.add_argument("--count", type=int, default=1,
                    help="Number of images to generate (1-4, default: 1)")
     p.add_argument("--board-id", default=None,
@@ -451,13 +465,13 @@ def add_image_edit_args(p):
 def add_storyboard_args(p):
     """Add storyboard-specific arguments."""
     p.add_argument("--cell-aspect-ratio", default="9:16",
-                   help='Storyboard cell ratio, fixed inside each cell (default: "9:16")')
+                   help='Internal storyboard cell ratio (default: "9:16")')
     p.add_argument("--shot-count", type=int, default=None,
-                   help="Fixed number of storyboard cells. Omit for automatic 4-9 cells, up to 16 for complex beats.")
+                   help="Fixed cell count from 1 to 16; omit for automatic layout")
     p.add_argument("--target-duration-seconds", type=int, default=None,
-                   help="Target total beat duration in seconds; single-shot durations should sum to this value.")
+                   help="Target total beat duration in seconds")
     p.add_argument("--reference-images", nargs="+", default=None,
-                   help="Reference image fileIds or local paths named Image 1, Image 2, ... in prompt order")
+                   help="Ordered storyboard reference image fileIds or local paths")
 
 
 def add_poll_args(p):
@@ -488,11 +502,6 @@ def validate_args(args, parser):
     if args.type == "image_edit":
         if not args.input_images:
             parser.error("--input-images is required for image_edit")
-        model = normalize_model_name(args.model)
-        spec = IMAGE_EDIT_MODELS.get(model)
-        max_images = spec.get("maxImages") if spec else None
-        if max_images and len(args.input_images) > max_images:
-            parser.error(f"{model} supports at most {max_images} input images")
     if args.type == "storyboard":
         if args.shot_count is not None and not 1 <= args.shot_count <= 16:
             parser.error("--shot-count must be between 1 and 16")
@@ -518,14 +527,12 @@ def cmd_list_models(args, parser):
         if args.json:
             print(json_mod.dumps(data, indent=2, ensure_ascii=False))
         else:
-            print("\nStoryboard — Fixed Backend Parameters\n")
-            print(f"model: {STORYBOARD_MODEL}")
-            print(f"type: {STORYBOARD_BACKEND_TYPE}")
-            print(f"aspectRatio: {STORYBOARD_ASPECT_RATIO}")
-            print(f"resolution: {STORYBOARD_RESOLUTION}")
-            print("cellAspectRatio: --cell-aspect-ratio (default 9:16)")
+            print("\nStoryboard - Fixed Backend Parameters\n")
+            for key, value in data.items():
+                print(f"{key}: {value}")
             print()
         return
+
 
     registry = MODEL_REGISTRY.get(task_type, {})
     if not registry:
@@ -562,7 +569,7 @@ def cmd_estimate_cost(args, parser):
     cost = estimate_cost(args.type, args.model, args.resolution, args.count or 1)
     if cost is None:
         print(f"Cannot estimate cost for model '{args.model}' with given parameters.", file=sys.stderr)
-        print("Use list-models to see available models, or check references/api-docs.md.", file=sys.stderr)
+        print("Use list-models to see available models, or check references/ai_image.md.", file=sys.stderr)
         sys.exit(1)
     count = args.count or 1
     unit = round(cost / count, 2)
@@ -584,7 +591,7 @@ def cmd_run(args, parser):
     body = build_body(args, client)
     task_id = do_submit(client, args.type, body, args.quiet)
     result = do_poll(client, args.type, task_id, args.timeout, args.interval, args.quiet)
-    print_result(result, args)
+    print_result(result, args, client)
 
 
 def cmd_submit(args, parser):
@@ -604,7 +611,7 @@ def cmd_query(args, parser):
             client, args.type, args.task_id,
             args.timeout, args.interval, args.quiet,
         )
-        print_result(result, args)
+        print_result(result, args, client)
     except TimeoutError as e:
         if not args.quiet:
             print(f"Timeout reached: {e}", file=sys.stderr)
@@ -626,7 +633,7 @@ def cmd_query(args, parser):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Topview AI Image — text-to-image, image editing, and Storyboard previews.",
+        description="Topview AI Image — text-to-image and image editing.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 AGENT WORKFLOW RULES:
@@ -638,7 +645,7 @@ AGENT WORKFLOW RULES:
 Task types:
   text2image  Text-to-Image  (model + prompt → images)
   image_edit  Image Edit     (model + prompt + reference images → edited images)
-  storyboard  Storyboard     (fixed GPT Image 2 + 16:9 grid storyboard preview)
+  storyboard  Storyboard     (fixed GPT Image 2 + 16:9 grid preview)
 
 Examples:
   # List available models for a task type
@@ -654,9 +661,9 @@ Examples:
       --input-images photo.jpg
 
   # Storyboard preview
-  python ai_image.py run --type storyboard \\
-      --prompt "女孩深夜回家，发现门口有一封匿名信" \\
+  python ai_image.py run --type storyboard --prompt "A product reveal in three beats" \
       --cell-aspect-ratio "9:16" --shot-count 6
+
 
   # Estimate cost
   python ai_image.py estimate-cost --type text2image --model "Seedream 5.0" \\
@@ -703,7 +710,7 @@ Examples:
 
     # -- estimate-cost --
     p_cost = sub.add_parser("estimate-cost", help="Estimate credit cost before running a task")
-    p_cost.add_argument("--type", required=True, choices=TASK_TYPES,
+    p_cost.add_argument("--type", required=True, choices=("text2image", "image_edit"),
                         help="Task type")
     p_cost.add_argument("--model", required=True, help="Model display name")
     p_cost.add_argument("--resolution", default=None, help="Resolution (e.g. 1K, 2K, 4K)")
