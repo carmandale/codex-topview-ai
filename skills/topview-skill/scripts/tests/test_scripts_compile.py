@@ -4,6 +4,17 @@ import unittest
 
 
 class TopViewScriptCompileTests(unittest.TestCase):
+    @staticmethod
+    def _starts_with_frontmatter_at_byte_zero(contents):
+        return contents.startswith(b"---")
+
+    def test_frontmatter_byte_zero_check_accepts_common_line_endings(self):
+        self.assertTrue(self._starts_with_frontmatter_at_byte_zero(b"---\nname: example\n"))
+        self.assertTrue(self._starts_with_frontmatter_at_byte_zero(b"---\r\nname: example\r\n"))
+        self.assertFalse(
+            self._starts_with_frontmatter_at_byte_zero(b"\xef\xbb\xbf---\nname: example\n")
+        )
+
     def test_skill_frontmatter_starts_at_first_byte(self):
         skills_dir = Path(__file__).resolve().parents[3]
         skill_paths = sorted(skills_dir.glob("*/SKILL.md"))
@@ -13,7 +24,7 @@ class TopViewScriptCompileTests(unittest.TestCase):
         for skill_path in skill_paths:
             with self.subTest(skill=skill_path.parent.name):
                 self.assertTrue(
-                    skill_path.read_bytes().startswith(b"---\n"),
+                    self._starts_with_frontmatter_at_byte_zero(skill_path.read_bytes()),
                     f"{skill_path} must start with YAML frontmatter at byte zero",
                 )
 
