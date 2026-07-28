@@ -6,7 +6,7 @@ import unittest
 class TopViewScriptCompileTests(unittest.TestCase):
     @staticmethod
     def _starts_with_frontmatter_at_byte_zero(contents):
-        return contents.startswith(b"---")
+        return contents.startswith((b"---\n", b"---\r\n"))
 
     def test_frontmatter_byte_zero_check_accepts_common_line_endings(self):
         self.assertTrue(self._starts_with_frontmatter_at_byte_zero(b"---\nname: example\n"))
@@ -14,6 +14,9 @@ class TopViewScriptCompileTests(unittest.TestCase):
         self.assertFalse(
             self._starts_with_frontmatter_at_byte_zero(b"\xef\xbb\xbf---\nname: example\n")
         )
+        self.assertFalse(self._starts_with_frontmatter_at_byte_zero(b"----\nname: example\n"))
+        self.assertFalse(self._starts_with_frontmatter_at_byte_zero(b"---x\nname: example\n"))
+        self.assertFalse(self._starts_with_frontmatter_at_byte_zero(b"---"))
 
     def test_skill_frontmatter_starts_at_first_byte(self):
         skills_dir = Path(__file__).resolve().parents[3]
