@@ -4,6 +4,19 @@ import unittest
 
 
 class TopViewScriptCompileTests(unittest.TestCase):
+    def test_skill_frontmatter_starts_at_first_byte(self):
+        skills_dir = Path(__file__).resolve().parents[3]
+        skill_paths = sorted(skills_dir.glob("*/SKILL.md"))
+
+        self.assertTrue(skill_paths)
+
+        for skill_path in skill_paths:
+            with self.subTest(skill=skill_path.parent.name):
+                self.assertTrue(
+                    skill_path.read_bytes().startswith(b"---\n"),
+                    f"{skill_path} must start with YAML frontmatter at byte zero",
+                )
+
     def test_topview_scripts_compile(self):
         scripts_dir = Path(__file__).resolve().parents[1]
         script_paths = sorted(
